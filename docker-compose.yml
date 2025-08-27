@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    container_name: expense_claim_system
+    ports:
+      - "8084:8084"
+    volumes:
+      # Mount SQLite database file
+      - ./data:/app/data
+      # Mount media files (uploads, documents)
+      - ./media:/app/media
+      - ./uploads:/app/uploads
+      # Mount logs
+      - ./logs:/app/logs
+    environment:
+      - DEBUG=True
+      - USE_SQLITE=True
+      - ALLOWED_HOSTS=localhost,127.0.0.1,0.0.0.0
+      - SECRET_KEY=django-expense-claim-system-docker-secret-key
+      - TIME_ZONE=Asia/Hong_Kong
+    depends_on:
+      - redis
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8084/admin/login/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  redis:
+    image: redis:7-alpine
+    container_name: expense_claim_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  redis_data:
+
+networks:
+  default:
+    name: expense_claim_network

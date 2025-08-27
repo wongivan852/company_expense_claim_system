@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expense Claims Print View</title>
+    <style>
+        /* Print-specific styles */
+        @media print {
+            @page {
+                margin: 0.5in;
+                size: A4;
+            }
+            .no-print { display: none; }
+            .page-break { page-break-before: always; }
+        }
+        
+        /* Base styles matching PDF format */
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 11px;
+            line-height: 1.2;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        .claim-container {
+            width: 100%;
+            margin-bottom: 40px;
+        }
+        
+        .claim-header {
+            text-align: left;
+            margin-bottom: 20px;
+        }
+        
+        .company-name {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .claim-title {
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        
+        .claim-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        
+        .info-left, .info-right {
+            width: 48%;
+        }
+        
+        .info-line {
+            margin-bottom: 5px;
+        }
+        
+        /* Table styles matching PDF */
+        .expense-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .expense-table th,
+        .expense-table td {
+            border: 1px solid #000;
+            padding: 4px;
+            text-align: left;
+            vertical-align: top;
+        }
+        
+        .expense-table th {
+            background-color: #f0f0f0;
+            font-weight: bold;
+            text-align: center;
+        }
+        
+        .expense-table .item-col { width: 30px; }
+        .expense-table .date-col { width: 60px; }
+        .expense-table .desc-col { width: 250px; }
+        .expense-table .currency-col { width: 50px; }
+        .expense-table .category-cols { width: 40px; }
+        .expense-table .exchange-col { width: 50px; }
+        .expense-table .total-col { width: 60px; }
+        
+        /* Category columns - matching PDF structure */
+        .category-header {
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            font-size: 9px;
+            text-align: center;
+            padding: 2px 1px !important;
+        }
+        
+        .amount-cell {
+            text-align: right;
+            font-family: monospace;
+        }
+        
+        .total-row {
+            font-weight: bold;
+            background-color: #f8f8f8;
+        }
+        
+        .total-row td {
+            font-weight: bold;
+        }
+        
+        /* Approval section */
+        .approval-section {
+            margin-top: 30px;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .approval-box {
+            border: 1px solid #000;
+            padding: 10px;
+            width: 200px;
+            height: 50px;
+        }
+        
+        .approval-label {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        /* Print controls */
+        .print-controls {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            margin: 0 5px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+        
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+        
+        .btn:hover {
+            opacity: 0.8;
+        }
+        
+        /* Receipt images placeholder */
+        .receipt-note {
+            font-size: 9px;
+            font-style: italic;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <!-- Print Controls -->
+    <div class="print-controls no-print">
+        <button onclick="window.print()" class="btn btn-primary">
+            <i class="fas fa-print"></i> Print
+        </button>
+        <button onclick="window.close()" class="btn btn-secondary">
+            <i class="fas fa-times"></i> Close
+        </button>
+    </div>
+
+    {% for claim_data in claims_data %}
+        {% if not forloop.first %}
+        <div class="page-break"></div>
+        {% endif %}
+        
+        <div class="claim-container">
+            <!-- Header -->
+            <div class="claim-header">
+                <div class="company-name">{{ claim_data.claim.company.name }}</div>
+                <div class="claim-title">Expense Claim for {{ claim_data.claim.event_name|default:"General Expenses" }}</div>
+            </div>
+            
+            <!-- Basic Information -->
+            <div class="claim-info">
+                <div class="info-left">
+                    <div class="info-line"><strong>Claim made by:</strong> {{ claim_data.claim.claimant.get_full_name }}</div>
+                </div>
+                <div class="info-right">
+                    <div class="info-line"><strong>Period:</strong> {{ claim_data.claim.period_from|date:"M d" }}-{{ claim_data.claim.period_to|date:"d, Y" }}</div>
+                </div>
+            </div>
+            
+            <!-- Expense Items Table -->
+            <table class="expense-table">
+                <thead>
+                    <tr>
+                        <th rowspan="2" class="item-col">Item</th>
+                        <th rowspan="2" class="date-col">Date</th>
+                        <th rowspan="2" class="desc-col">Description</th>
+                        <th rowspan="2" class="currency-col">Original Currency</th>
+                        <!-- Category Headers - matching PDF structure -->
+                        <th class="category-cols category-header">主題演講</th>
+                        <th class="category-cols category-header">贊助嘉賓</th>
+                        <th class="category-cols category-header">課程運營推廣</th>
+                        <th class="category-cols category-header">展覽采購</th>
+                        <th class="category-cols category-header">其他雜項</th>
+                        <th class="category-cols category-header">業務商談</th>
+                        <th class="category-cols category-header">交通</th>
+                        <th rowspan="2" class="exchange-col">Exchange</th>
+                        <th rowspan="2" class="total-col">Total(HK)</th>
+                    </tr>
+                    <tr>
+                        <th class="category-cols">講師</th>
+                        <th class="category-cols">雜項</th>
+                        <th class="category-cols">采購</th>
+                        <th class="category-cols">雜項</th>
+                        <th class="category-cols">采購</th>
+                        <th class="category-cols">雜項</th>
+                        <th class="category-cols">雜項</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in claim_data.expense_items %}
+                    <tr>
+                        <td class="item-col">{{ item.item_number }}</td>
+                        <td class="date-col">{{ item.expense_date|date:"M d" }}</td>
+                        <td class="desc-col">
+                            {{ item.description }}
+                            {% if item.description_chinese %}
+                            <br><em>{{ item.description_chinese }}</em>
+                            {% endif %}
+                            {% if item.participants %}
+                            <br><small>({{ item.participants }})</small>
+                            {% endif %}
+                            {% if not item.has_receipt %}
+                            <br><span class="receipt-note">{{ item.receipt_notes|default:"without receipt" }}</span>
+                            {% else %}
+                            {% if item.receipt_notes %}
+                            <br><span class="receipt-note">{{ item.receipt_notes }}</span>
+                            {% endif %}
+                            {% endif %}
+                        </td>
+                        <td class="currency-col">{{ item.currency.code }}</td>
+                        
+                        <!-- Category Amount Columns -->
+                        {% if item.category.code == "keynote_speech" %}
+                        <td class="amount-cell category-cols">{{ item.amount_hkd|floatformat:2 }}</td>
+                        <td class="category-cols"></td>
+                        <td class="category-cols"></td>
+                        <td class="category-cols"></td>
+                        <td class="category-cols"></td>
+                        <td class="category-cols"></td>
+                        <td class="category-cols"></td>
+                        {% elif item.category.code == "sponsor_guest" %}
+                        <td class="category-cols"></td>
+                        <td class="amount-cell category-cols">{{ item.amount_hkd|floatformat:2 }}</td>
+                        <td class="category-cols"></td>
+                        <td class="category-cols"></td>
+                        <td class="category-cols"></td>
+                        <td class="category-cols"></td>
+                        <td class="category-cols"></td>
+                        {% elif item.category.code == "course_operations" %}
+                        <td class="category-cols"></td>
+                        <td class="category-cols"></td>
+                        <td class="amount-cell category-cols">{{ item.amount_hkd|floatformat:2 }}</td>
+                        <td class="category-cols"></td>
+                        <td class="category-cols"></td>
+                        <td class="category-cols"></td>
+                        <td class="category-cols"></td>
+                        {% elif item.category.code == "exhibition_procurement" %}
+                        <td class="category-cols"></td>
+                        <td class="category-cols"></td>
+                        <td class="category-cols"></td>
+                        <td class="amount-cell category-cols">{{ item.amount_hkd|floatformat:2 }}</td>
+                        <td class="category-cols"></td>
+                        <td class="category-cols"></td>
+                        <td class="category-cols"></td>
+                        {% elif item.category.code == "other_misc" %}
+                        <td class="category-cols"></td>
+                        <td class="category-cols"></td>
+                        <td class="category-cols"></td>
+                        <td class="category-cols"></td>
+                        <td class="amount-cell category-cols">{{ item.amount_hkd|floatformat:2 }}</td>
+                        <td class="category-cols"></td>
+                        <td class="category-cols"></td>
+                        {% elif item.category.code == "business_negotiation" %}
+                        <td class="category-cols"></td>
+                        <td class="category-cols"></td>
+                        <td class="category-cols"></td>
+                        <td class="category-cols"></td>
+                        <td class="category-cols"></td>
+                        <td class="amount-cell category-cols">{{ item.amount_hkd|floatformat:2 }}</td>
+                        <td class="category-cols"></td>
+                        {% elif item.category.code == "transportation" %}
+                        <td class="category-cols"></td>
+                        <td class="category-cols"></td>
+                        <td class="category-cols"></td>
+                        <td class="category-cols"></td>
+                        <td class="category-cols"></td>
+                        <td class="category-cols"></td>
+                        <td class="amount-cell category-cols">{{ item.amount_hkd|floatformat:2 }}</td>
+                        {% else %}
+                        <!-- Default to other misc if category not matched -->
+                        <td class="category-cols"></td>
+                        <td class="category-cols"></td>
+                        <td class="category-cols"></td>
+                        <td class="category-cols"></td>
+                        <td class="amount-cell category-cols">{{ item.amount_hkd|floatformat:2 }}</td>
+                        <td class="category-cols"></td>
+                        <td class="category-cols"></td>
+                        {% endif %}
+                        
+                        <td class="amount-cell exchange-col">{{ item.exchange_rate|floatformat:2 }}</td>
+                        <td class="amount-cell total-col">{{ item.amount_hkd|floatformat:2 }}</td>
+                    </tr>
+                    {% endfor %}
+                    
+                    <!-- Total Row -->
+                    <tr class="total-row">
+                        <td colspan="4"><strong>Total</strong></td>
+                        <td class="amount-cell">{{ claim_data.category_totals.keynote_speech|default_if_none:"0"|floatformat:2 }}</td>
+                        <td class="amount-cell">{{ claim_data.category_totals.sponsor_guest|default_if_none:"0"|floatformat:2 }}</td>
+                        <td class="amount-cell">{{ claim_data.category_totals.course_operations|default_if_none:"0"|floatformat:2 }}</td>
+                        <td class="amount-cell">{{ claim_data.category_totals.exhibition_procurement|default_if_none:"0"|floatformat:2 }}</td>
+                        <td class="amount-cell">{{ claim_data.category_totals.other_misc|default_if_none:"0"|floatformat:2 }}</td>
+                        <td class="amount-cell">{{ claim_data.category_totals.business_negotiation|default_if_none:"0"|floatformat:2 }}</td>
+                        <td class="amount-cell">{{ claim_data.category_totals.transportation|default_if_none:"0"|floatformat:2 }}</td>
+                        <td></td>
+                        <td class="amount-cell"><strong>{{ claim_data.total_hkd|floatformat:2 }}</strong></td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <!-- Approval Section -->
+            <div class="approval-section">
+                <div class="approval-box">
+                    <div class="approval-label">Claim checked by</div>
+                    {% if claim_data.claim.checked_by %}
+                    <div>{{ claim_data.claim.checked_by.get_full_name }}</div>
+                    <div><small>{{ claim_data.claim.checked_at|date:"M d, Y" }}</small></div>
+                    {% endif %}
+                </div>
+                <div class="approval-box">
+                    <div class="approval-label">Approved</div>
+                    {% if claim_data.claim.approved_by %}
+                    <div>{{ claim_data.claim.approved_by.get_full_name }}</div>
+                    <div><small>{{ claim_data.claim.approved_at|date:"M d, Y" }}</small></div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Claim Information Footer -->
+            <div style="margin-top: 20px; font-size: 10px; color: #666;">
+                <div><strong>Claim Number:</strong> {{ claim_data.claim.claim_number }}</div>
+                <div><strong>Status:</strong> {{ claim_data.claim.get_status_display }}</div>
+                <div><strong>Created:</strong> {{ claim_data.claim.created_at|date:"F d, Y g:i A" }}</div>
+                {% if claim_data.claim.submitted_at %}
+                <div><strong>Submitted:</strong> {{ claim_data.claim.submitted_at|date:"F d, Y g:i A" }}</div>
+                {% endif %}
+            </div>
+        </div>
+    {% endfor %}
+
+    <script>
+        // Auto-print when page loads (optional)
+        // window.onload = function() { window.print(); }
+    </script>
+</body>
+</html>

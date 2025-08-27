@@ -1,0 +1,1132 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block title %}{% if claim %}Edit Claim #{{ claim.id }}{% else %}Create New Claim{% endif %} - CG Global Entertainment{% endblock %}
+
+{% block extra_css %}
+<style>
+.amount-field {
+    font-family: 'Courier New', monospace;
+    text-align: right;
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: #2c3e50;
+}
+
+.amount-field::placeholder {
+    color: #bdc3c7;
+    font-style: italic;
+}
+
+.amount-feedback {
+    position: absolute;
+    z-index: 1000;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 5px 10px;
+    font-size: 0.85rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-top: 2px;
+}
+
+.exchange-rate-input {
+    font-family: 'Courier New', monospace;
+    text-align: right;
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+
+.hkd-equivalent {
+    font-family: 'Courier New', monospace;
+    text-align: right;
+    font-weight: 600;
+    background-color: #f8f9fa;
+    border-color: #e9ecef;
+}
+
+.amount-field:focus {
+    border-color: #28a745;
+    box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+}
+
+.exchange-rate-input:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.input-group-text {
+    font-weight: 600;
+    background-color: #f8f9fa;
+    border-color: #ced4da;
+}
+
+.exchange-rate-info {
+    color: #6c757d;
+    font-size: 0.8rem;
+}
+
+.amount-feedback {
+    animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="display-5">
+                {% if claim %}
+                    <i class="fas fa-edit text-primary"></i>
+                    Edit Expense Claim #{{ claim.id }}
+                {% else %}
+                    <i class="fas fa-plus-circle text-primary"></i>
+                    Create New Expense Claim
+                {% endif %}
+            </h1>
+            <a href="{% url 'claims:claim_list' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Claims
+            </a>
+        </div>
+
+        <form method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
+            {% csrf_token %}
+            
+            <!-- Claim Information -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-info-circle"></i> Claim Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.company.id_for_label }}" class="form-label">
+                                    Company <span class="text-danger">*</span>
+                                </label>
+                                {{ form.company|add_class:"form-select" }}
+                                {% if form.company.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.company.errors.0 }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.event_name.id_for_label }}" class="form-label">
+                                    Event/Purpose <span class="text-danger">*</span>
+                                </label>
+                                {{ form.event_name|add_class:"form-control" }}
+                                <div class="form-text">
+                                    e.g., IAICC Conference, Client Meeting, Team Building
+                                </div>
+                                {% if form.event_name.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.event_name.errors.0 }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">
+                                    Expense Month <span class="text-danger">*</span>
+                                </label>
+                                <div class="row g-2">
+                                    <div class="col-7">
+                                        <select name="expense_month" id="expense-month" class="form-select" required>
+                                            <option value="">-- Select Month --</option>
+                                            <option value="2024-01">January 2024</option>
+                                            <option value="2024-02">February 2024</option>
+                                            <option value="2024-03">March 2024</option>
+                                            <option value="2024-04">April 2024</option>
+                                            <option value="2024-05">May 2024</option>
+                                            <option value="2024-06">June 2024</option>
+                                            <option value="2024-07">July 2024</option>
+                                            <option value="2024-08">August 2024</option>
+                                            <option value="2024-09">September 2024</option>
+                                            <option value="2024-10">October 2024</option>
+                                            <option value="2024-11">November 2024</option>
+                                            <option value="2024-12">December 2024</option>
+                                            <option value="2025-01">January 2025</option>
+                                            <option value="2025-02">February 2025</option>
+                                            <option value="2025-03">March 2025</option>
+                                            <option value="2025-04">April 2025</option>
+                                            <option value="2025-05">May 2025</option>
+                                            <option value="2025-06">June 2025</option>
+                                            <option value="2025-07">July 2025</option>
+                                            <option value="2025-08" selected>August 2025</option>
+                                            <option value="2025-09">September 2025</option>
+                                            <option value="2025-10">October 2025</option>
+                                            <option value="2025-11">November 2025</option>
+                                            <option value="2025-12">December 2025</option>
+                                            <option value="2026-01">January 2026</option>
+                                            <option value="2026-02">February 2026</option>
+                                            <option value="2026-03">March 2026</option>
+                                            <option value="2026-04">April 2026</option>
+                                            <option value="2026-05">May 2026</option>
+                                            <option value="2026-06">June 2026</option>
+                                            <option value="2026-07">July 2026</option>
+                                            <option value="2026-08">August 2026</option>
+                                            <option value="2026-09">September 2026</option>
+                                            <option value="2026-10">October 2026</option>
+                                            <option value="2026-11">November 2026</option>
+                                            <option value="2026-12">December 2026</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-5">
+                                        <div class="form-control bg-light text-center" style="height: 38px; line-height: 26px;">
+                                            <i class="fas fa-calendar-alt text-primary"></i> Easy Select
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Hidden fields for form submission -->
+                                <input type="hidden" name="period_from" id="period-from-hidden">
+                                <input type="hidden" name="period_to" id="period-to-hidden">
+                                <div class="form-text">
+                                    Choose your expense month easily from the dropdown
+                                </div>
+                                {% if form.period_from.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.period_from.errors.0 }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">
+                                    Claim Period <span class="badge bg-info">Auto-calculated</span>
+                                </label>
+                                <input type="text" id="period-display" class="form-control" readonly 
+                                       placeholder="Will be calculated from selected month"
+                                       style="background-color: #f8f9fa;">
+                                <div class="form-text">
+                                    Full month period will be automatically set
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Expense Items -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-receipt"></i> Expense Items
+                    </h5>
+                    <button type="button" class="btn btn-sm btn-primary" id="addExpenseItem">
+                        <i class="fas fa-plus"></i> Add Item
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div id="expense-items-container">
+                        {% if claim.expense_items.all %}
+                            <!-- Existing expense items (edit mode) -->
+                            {% for item in claim.expense_items.all %}
+                            <div class="expense-item border rounded p-3 mb-3">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-tag"></i> Expense Item #{{ forloop.counter }}
+                                    </h6>
+                                    <button type="button" class="btn btn-sm btn-outline-danger remove-item" {% if forloop.first and forloop.last %}style="display: none;"{% endif %}>
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="mb-3">
+                                            <label class="form-label">Category <span class="text-danger">*</span></label>
+                                            <select name="expense_items[{{ forloop.counter0 }}][category]" class="form-select" required>
+                                                <option value="">-- Select Category --</option>
+                                                {% for category in expense_categories %}
+                                                <option value="{{ category.id }}" {% if category.id == item.category.id %}selected{% endif %}>{{ category.name }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="mb-3">
+                                            <label class="form-label">Currency <span class="text-danger">*</span></label>
+                                            <select name="expense_items[{{ forloop.counter0 }}][currency]" class="form-select currency-select" required>
+                                                {% for currency in currencies %}
+                                                <option value="{{ currency.code }}" {% if currency.code == item.currency.code %}selected{% endif %}>
+                                                    {{ currency.code }} - {{ currency.name }}
+                                                </option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <div class="mb-3">
+                                            <label class="form-label">Exchange Rate</label>
+                                            <div class="input-group">
+                                                <input type="number" name="expense_items[{{ forloop.counter0 }}][exchange_rate]" 
+                                                       class="form-control exchange-rate-input" 
+                                                       step="0.0001" min="0.0001" max="999.9999" 
+                                                       value="{{ item.exchange_rate }}"
+                                                       placeholder="1.0000"
+                                                       title="Rate to HKD (e.g., 1 USD = 7.8 HKD)">
+                                            </div>
+                                            <div class="form-text exchange-rate-info">to HKD</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="mb-3">
+                                            <label class="form-label">Amount <span class="text-danger">*</span></label>
+                                            <div class="input-group">
+                                                <span class="input-group-text currency-symbol">{{ item.currency.symbol }}</span>
+                                                <input type="text" name="expense_items[{{ forloop.counter0 }}][amount]" 
+                                                       class="form-control amount-field" 
+                                                       required
+                                                       value="{{ item.original_amount }}"
+                                                       placeholder="0.00"
+                                                       data-original-amount="{{ item.original_amount }}"
+                                                       title="Enter amount (e.g., 123.45)"
+                                                       autocomplete="off">
+                                            </div>
+                                            <div class="form-text">
+                                                <i class="fas fa-info-circle text-primary"></i>
+                                                Type numbers only, decimals auto-format
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="mb-3">
+                                            <label class="form-label">HKD Equivalent</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text">HK$</span>
+                                                <input type="number" class="form-control hkd-equivalent" 
+                                                       readonly 
+                                                       value="{{ item.amount_hkd }}"
+                                                       placeholder="0.00"
+                                                       title="Automatically calculated HKD amount">
+                                            </div>
+                                            <div class="form-text">Auto-calculated</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Date of Occurrence <span class="text-danger">*</span></label>
+                                            <input type="date" name="expense_items[{{ forloop.counter0 }}][expense_date]" 
+                                                   class="form-control" required
+                                                   value="{{ item.expense_date|date:'Y-m-d' }}"
+                                                   title="When did this expense occur?">
+                                            <div class="form-text">Specific date when this expense occurred</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Receipt</label>
+                                            {% if item.documents.exists %}
+                                            <div class="mb-2">
+                                                <a href="{{ item.documents.first.file.url }}" target="_blank" class="btn btn-sm btn-outline-info">
+                                                    <i class="fas fa-eye"></i> View Current Receipt
+                                                </a>
+                                            </div>
+                                            {% endif %}
+                                            <input type="file" name="expense_items[{{ forloop.counter0 }}][receipt]" 
+                                                   class="form-control" 
+                                                   accept=".jpg,.jpeg,.png,.pdf">
+                                            <div class="form-text">JPEG, PNG, or PDF files up to 5MB{% if item.documents.exists %} (leave empty to keep current receipt){% endif %}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Description</label>
+                                    <textarea name="expense_items[{{ forloop.counter0 }}][description]" 
+                                              class="form-control" rows="2"
+                                              placeholder="Brief description of the expense">{{ item.description }}</textarea>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <!-- Initial expense item (create mode) -->
+                            <div class="expense-item border rounded p-3 mb-3">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-tag"></i> Expense Item #1
+                                    </h6>
+                                    <button type="button" class="btn btn-sm btn-outline-danger remove-item" style="display: none;">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="mb-3">
+                                            <label class="form-label">Category <span class="text-danger">*</span></label>
+                                            <select name="expense_items[0][category]" class="form-select" required>
+                                                <option value="">-- Select Category --</option>
+                                                {% for category in expense_categories %}
+                                                <option value="{{ category.id }}">{{ category.name }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="mb-3">
+                                            <label class="form-label">Currency <span class="text-danger">*</span></label>
+                                            <select name="expense_items[0][currency]" class="form-select currency-select" required>
+                                                {% for currency in currencies %}
+                                                <option value="{{ currency.code }}" {% if currency.code == 'HKD' %}selected{% endif %}>
+                                                    {{ currency.code }} - {{ currency.name }}
+                                                </option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <div class="mb-3">
+                                            <label class="form-label">Exchange Rate</label>
+                                            <div class="input-group">
+                                                <input type="number" name="expense_items[0][exchange_rate]" 
+                                                       class="form-control exchange-rate-input" 
+                                                       step="0.0001" min="0.0001" max="999.9999" 
+                                                       value="1.0000"
+                                                       placeholder="1.0000"
+                                                       title="Rate to HKD (e.g., 1 USD = 7.8 HKD)">
+                                            </div>
+                                            <div class="form-text exchange-rate-info">to HKD</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="mb-3">
+                                            <label class="form-label">Amount <span class="text-danger">*</span></label>
+                                            <div class="input-group">
+                                                <span class="input-group-text currency-symbol">$</span>
+                                                <input type="text" name="expense_items[0][amount]" 
+                                                       class="form-control amount-field" 
+                                                       required
+                                                       placeholder="0.00"
+                                                       data-original-amount=""
+                                                       title="Enter amount (e.g., 123.45)"
+                                                       autocomplete="off">
+                                            </div>
+                                            <div class="form-text">
+                                                <i class="fas fa-info-circle text-primary"></i>
+                                                Type numbers only, decimals auto-format
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="mb-3">
+                                            <label class="form-label">HKD Equivalent</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text">HK$</span>
+                                                <input type="number" class="form-control hkd-equivalent" 
+                                                       readonly 
+                                                       placeholder="0.00"
+                                                       title="Automatically calculated HKD amount">
+                                            </div>
+                                            <div class="form-text">Auto-calculated</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Date of Occurrence <span class="text-danger">*</span></label>
+                                            <input type="date" name="expense_items[0][expense_date]" 
+                                                   class="form-control" required
+                                                   title="When did this expense occur?">
+                                            <div class="form-text">Specific date when this expense occurred</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Receipt</label>
+                                            <input type="file" name="expense_items[0][receipt]" 
+                                                   class="form-control" 
+                                                   accept=".jpg,.jpeg,.png,.pdf">
+                                            <div class="form-text">JPEG, PNG, or PDF files up to 5MB</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Description</label>
+                                    <textarea name="expense_items[0][description]" 
+                                              class="form-control" rows="2"
+                                              placeholder="Brief description of the expense"></textarea>
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Total Summary -->
+                    <div class="border-top pt-3">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <strong>Total Items: <span id="total-items">{% if claim.expense_items.all %}{{ claim.expense_items.all|length }}{% else %}1{% endif %}</span></strong>
+                            </div>
+                            <div class="col-md-6 text-end">
+                                <strong>Total Amount: <span id="total-amount">HKD {% if claim.total_amount_hkd %}{{ claim.total_amount_hkd }}{% else %}0.00{% endif %}</span></strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Additional Information -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-sticky-note"></i> Additional Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Notes/Comments</label>
+                        <textarea name="notes" class="form-control" rows="3"
+                                  placeholder="Any additional notes or special instructions..."></textarea>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Priority</label>
+                                <select name="priority" class="form-select">
+                                    <option value="normal">Normal</option>
+                                    <option value="urgent">Urgent</option>
+                                    <option value="low">Low Priority</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check form-switch mt-4">
+                                <input class="form-check-input" type="checkbox" name="notify_manager" 
+                                       id="notifyManager" checked>
+                                <label class="form-check-label" for="notifyManager">
+                                    Notify manager immediately
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <button type="submit" name="action" value="save_draft" class="btn btn-outline-secondary">
+                                <i class="fas fa-save"></i> Save as Draft
+                            </button>
+                        </div>
+                        <div>
+                            <a href="{% url 'claims:claim_list' %}" class="btn btn-outline-dark me-2">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                            <button type="submit" name="action" value="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-paper-plane"></i> Submit for Approval
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Expense Item Template (Hidden) -->
+<template id="expense-item-template">
+    <div class="expense-item border rounded p-3 mb-3">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="mb-0">
+                <i class="fas fa-tag"></i> Expense Item #<span class="item-number"></span>
+            </h6>
+            <button type="button" class="btn btn-sm btn-outline-danger remove-item">
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-4">
+                <div class="mb-3">
+                    <label class="form-label">Category <span class="text-danger">*</span></label>
+                    <select name="expense_items[INDEX][category]" class="form-select" required>
+                        <option value="">-- Select Category --</option>
+                        {% for category in expense_categories %}
+                        <option value="{{ category.id }}">{{ category.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="mb-3">
+                    <label class="form-label">Currency <span class="text-danger">*</span></label>
+                    <select name="expense_items[INDEX][currency]" class="form-select currency-select" required>
+                        {% for currency in currencies %}
+                        <option value="{{ currency.code }}" {% if currency.code == 'HKD' %}selected{% endif %}>
+                            {{ currency.code }} - {{ currency.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="mb-3">
+                    <label class="form-label">Exchange Rate</label>
+                    <div class="input-group">
+                        <input type="number" name="expense_items[INDEX][exchange_rate]" 
+                               class="form-control exchange-rate-input" 
+                               step="0.0001" min="0.0001" max="999.9999" 
+                               value="1.0000"
+                               placeholder="1.0000"
+                               title="Rate to HKD (e.g., 1 USD = 7.8 HKD)">
+                    </div>
+                    <div class="form-text exchange-rate-info">to HKD</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="mb-3">
+                    <label class="form-label">Amount <span class="text-danger">*</span></label>
+                    <div class="input-group">
+                        <span class="input-group-text currency-symbol">$</span>
+                        <input type="text" name="expense_items[INDEX][amount]" 
+                               class="form-control amount-field" 
+                               required
+                               placeholder="0.00"
+                               data-original-amount=""
+                               title="Enter amount (e.g., 123.45)"
+                               autocomplete="off">
+                    </div>
+                    <div class="form-text">
+                        <i class="fas fa-info-circle text-primary"></i>
+                        Type numbers only, decimals auto-format
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="mb-3">
+                    <label class="form-label">HKD Equivalent</label>
+                    <div class="input-group">
+                        <span class="input-group-text">HK$</span>
+                        <input type="number" class="form-control hkd-equivalent" 
+                               readonly 
+                               placeholder="0.00"
+                               title="Automatically calculated HKD amount">
+                    </div>
+                    <div class="form-text">Auto-calculated</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <label class="form-label">Date of Occurrence <span class="text-danger">*</span></label>
+                    <input type="date" name="expense_items[INDEX][expense_date]" 
+                           class="form-control" required
+                           title="When did this expense occur?">
+                    <div class="form-text">Specific date when this expense occurred</div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <label class="form-label">Receipt</label>
+                    <input type="file" name="expense_items[INDEX][receipt]" 
+                           class="form-control" 
+                           accept=".jpg,.jpeg,.png,.pdf">
+                    <div class="form-text">JPEG, PNG, or PDF files up to 5MB</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="mb-3">
+            <label class="form-label">Description</label>
+            <textarea name="expense_items[INDEX][description]" 
+                      class="form-control" rows="2"
+                      placeholder="Brief description of the expense"></textarea>
+        </div>
+    </div>
+</template>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let itemCounter = 1;
+
+    // Add expense item
+    document.getElementById('addExpenseItem').addEventListener('click', function() {
+        const template = document.getElementById('expense-item-template');
+        const container = document.getElementById('expense-items-container');
+        
+        // Clone template content
+        const newItem = template.content.cloneNode(true);
+        
+        // Update item number and form field names
+        newItem.querySelector('.item-number').textContent = itemCounter + 1;
+        
+        // Update all form field names with new index
+        const inputs = newItem.querySelectorAll('input, select, textarea');
+        inputs.forEach(input => {
+            if (input.name) {
+                input.name = input.name.replace('INDEX', itemCounter);
+            }
+        });
+        
+        container.appendChild(newItem);
+        itemCounter++;
+        
+        updateTotals();
+        updateRemoveButtons();
+    });
+
+    // Remove expense item
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.remove-item')) {
+            e.target.closest('.expense-item').remove();
+            updateTotals();
+            updateRemoveButtons();
+            updateItemNumbers();
+        }
+    });
+
+    // Enhanced amount input handling with real-time formatting
+    document.addEventListener('input', function(e) {
+        if (e.target.classList.contains('amount-field')) {
+            handleAmountInput(e.target);
+            updateHKDEquivalent(e.target.closest('.expense-item'));
+            updateTotals();
+        }
+    });
+    
+    // Format on blur for final display
+    document.addEventListener('blur', function(e) {
+        if (e.target.classList.contains('amount-field')) {
+            formatAmountForDisplay(e.target);
+        }
+        if (e.target.classList.contains('exchange-rate-input')) {
+            formatExchangeRateInput(e.target);
+        }
+    });
+    
+    // Clear formatting on focus for easier editing
+    document.addEventListener('focus', function(e) {
+        if (e.target.classList.contains('amount-field')) {
+            clearAmountFormatting(e.target);
+        }
+    });
+
+    function handleAmountInput(input) {
+        let value = input.value;
+        
+        // Store original for potential restoration
+        if (!input.dataset.editValue) {
+            input.dataset.editValue = value;
+        }
+        
+        // Remove non-numeric characters except decimal point
+        value = value.replace(/[^\d.]/g, '');
+        
+        // Handle multiple decimal points
+        const decimalCount = (value.match(/\./g) || []).length;
+        if (decimalCount > 1) {
+            const parts = value.split('.');
+            value = parts[0] + '.' + parts.slice(1).join('');
+        }
+        
+        // Limit to 2 decimal places
+        const decimalIndex = value.indexOf('.');
+        if (decimalIndex !== -1 && value.length > decimalIndex + 3) {
+            value = value.substring(0, decimalIndex + 3);
+        }
+        
+        // Limit maximum value with user-friendly feedback
+        const numValue = parseFloat(value);
+        if (numValue > 999999.99) {
+            value = '999999.99';
+            showAmountFeedback(input, '💰 Maximum amount: $999,999.99', 'info');
+        }
+        
+        // Minimum value check (but allow empty for editing)
+        if (numValue > 0 && numValue < 0.01) {
+            showAmountFeedback(input, '💡 Minimum amount: $0.01', 'info');
+        }
+        
+        input.value = value;
+        
+        // Clear feedback after short delay
+        setTimeout(() => clearAmountFeedback(input), 2500);
+    }
+
+    function formatAmountForDisplay(input) {
+        let value = parseFloat(input.value.replace(/,/g, ''));
+        if (value && !isNaN(value)) {
+            // Store raw value for calculations
+            input.dataset.rawValue = value.toString();
+            // Format with commas for display
+            input.value = value.toLocaleString('en-US', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+        } else if (input.value.trim() === '') {
+            input.value = '';
+        } else {
+            // Invalid input - clear and show feedback
+            input.value = '';
+            showAmountFeedback(input, '❌ Please enter a valid amount', 'error');
+        }
+    }
+    
+    function clearAmountFormatting(input) {
+        // Remove commas for easier editing
+        if (input.value) {
+            const rawValue = input.dataset.rawValue || input.value.replace(/,/g, '');
+            input.value = rawValue;
+        }
+    }
+
+    function formatAmountInput(input) {
+        // This function is kept for backward compatibility
+        formatAmountForDisplay(input);
+    }
+
+    // Currency and exchange rate change handling
+    document.addEventListener('change', function(e) {
+        if (e.target.classList.contains('currency-select')) {
+            updateExchangeRateDefaults(e.target);
+            updateHKDEquivalent(e.target.closest('.expense-item'));
+            updateTotals();
+        }
+    });
+
+    // Real-time calculation updates for exchange rates
+    document.addEventListener('input', function(e) {
+        if (e.target.classList.contains('exchange-rate-input')) {
+            updateHKDEquivalent(e.target.closest('.expense-item'));
+            updateTotals();
+        }
+    });
+
+    function formatExchangeRateInput(input) {
+        let value = parseFloat(input.value);
+        if (value && !isNaN(value)) {
+            input.value = value.toFixed(4);
+        } else if (!input.value) {
+            input.value = '1.0000';
+        }
+    }
+
+    function updateExchangeRateDefaults(currencySelect) {
+        const expenseItem = currencySelect.closest('.expense-item');
+        const exchangeRateInput = expenseItem.querySelector('.exchange-rate-input');
+        const exchangeRateInfo = expenseItem.querySelector('.exchange-rate-info');
+        const selectedCurrency = currencySelect.value;
+        
+        // Default exchange rates (can be customized)
+        const defaultRates = {
+            'HKD': 1.0000,
+            'USD': 7.8000,
+            'CNY': 1.0700,
+            'RMB': 1.0700,
+            'EUR': 8.5000,
+            'GBP': 9.8000,
+            'JPY': 0.0520,
+            'SGD': 5.7000,
+            'AUD': 5.1000,
+            'CAD': 5.7000
+        };
+        
+        if (defaultRates[selectedCurrency]) {
+            exchangeRateInput.value = defaultRates[selectedCurrency].toFixed(4);
+        } else {
+            exchangeRateInput.value = '1.0000';
+        }
+        
+        // Update the info text
+        if (selectedCurrency === 'HKD') {
+            exchangeRateInfo.textContent = 'Base currency';
+            exchangeRateInput.disabled = true;
+            exchangeRateInput.style.backgroundColor = '#e9ecef';
+        } else {
+            exchangeRateInfo.textContent = 'to HKD';
+            exchangeRateInput.disabled = false;
+            exchangeRateInput.style.backgroundColor = '';
+        }
+        
+        updateHKDEquivalent(expenseItem);
+    }
+
+    function updateHKDEquivalent(expenseItem) {
+        const amountInput = expenseItem.querySelector('.amount-field');
+        const exchangeRateInput = expenseItem.querySelector('.exchange-rate-input');
+        const hkdEquivalentInput = expenseItem.querySelector('.hkd-equivalent');
+        
+        const amount = parseFloat(amountInput.value) || 0;
+        const exchangeRate = parseFloat(exchangeRateInput.value) || 1;
+        
+        const hkdAmount = amount * exchangeRate;
+        hkdEquivalentInput.value = hkdAmount.toFixed(2);
+    }
+
+    function showAmountFeedback(input, message, type) {
+        clearAmountFeedback(input);
+        
+        const feedback = document.createElement('div');
+        feedback.className = `amount-feedback text-${type === 'warning' ? 'warning' : 'danger'} small mt-1`;
+        feedback.textContent = message;
+        
+        input.closest('.input-group').parentNode.appendChild(feedback);
+    }
+
+    function clearAmountFeedback(input) {
+        const existing = input.closest('.mb-3').querySelector('.amount-feedback');
+        if (existing) {
+            existing.remove();
+        }
+    }
+
+    function updateRemoveButtons() {
+        const items = document.querySelectorAll('.expense-item');
+        items.forEach((item, index) => {
+            const removeBtn = item.querySelector('.remove-item');
+            if (items.length > 1) {
+                removeBtn.style.display = 'block';
+            } else {
+                removeBtn.style.display = 'none';
+            }
+        });
+    }
+
+    function updateItemNumbers() {
+        const items = document.querySelectorAll('.expense-item');
+        items.forEach((item, index) => {
+            const numberSpan = item.querySelector('.item-number');
+            if (numberSpan) {
+                numberSpan.textContent = index + 1;
+            }
+        });
+    }
+
+    function updateTotals() {
+        const items = document.querySelectorAll('.expense-item');
+        let totalHKD = 0;
+        let currencies = new Set();
+        
+        items.forEach(item => {
+            const amountInput = item.querySelector('.amount-field');
+            const currencySelect = item.querySelector('.currency-select');
+            const hkdEquivalentInput = item.querySelector('.hkd-equivalent');
+            
+            const amount = parseFloat(amountInput.value) || 0;
+            const currency = currencySelect ? currencySelect.value : 'HKD';
+            const hkdEquivalent = parseFloat(hkdEquivalentInput.value) || 0;
+            
+            totalHKD += hkdEquivalent;
+            if (currency) currencies.add(currency);
+        });
+        
+        document.getElementById('total-items').textContent = items.length;
+        
+        // Show HKD total with currency breakdown
+        if (currencies.size === 1 && currencies.has('HKD')) {
+            document.getElementById('total-amount').textContent = `HKD ${totalHKD.toFixed(2)}`;
+        } else {
+            document.getElementById('total-amount').textContent = `HKD ${totalHKD.toFixed(2)} (Multi-currency)`;
+        }
+        
+        // Update currency symbol in amount fields based on selected currency
+        items.forEach(item => {
+            const currencySelect = item.querySelector('.currency-select');
+            const inputGroup = item.querySelector('.input-group');
+            const currencySymbol = inputGroup.querySelector('.input-group-text');
+            
+            if (currencySelect && currencySymbol) {
+                const selectedCurrency = currencySelect.value;
+                switch(selectedCurrency) {
+                    case 'USD':
+                        currencySymbol.textContent = '$';
+                        break;
+                    case 'HKD':
+                        currencySymbol.textContent = 'HK$';
+                        break;
+                    case 'CNY':
+                    case 'RMB':
+                        currencySymbol.textContent = '¥';
+                        break;
+                    case 'EUR':
+                        currencySymbol.textContent = '€';
+                        break;
+                    case 'GBP':
+                        currencySymbol.textContent = '£';
+                        break;
+                    case 'JPY':
+                        currencySymbol.textContent = '¥';
+                        break;
+                    case 'SGD':
+                        currencySymbol.textContent = 'S$';
+                        break;
+                    case 'AUD':
+                        currencySymbol.textContent = 'A$';
+                        break;
+                    case 'CAD':
+                        currencySymbol.textContent = 'C$';
+                        break;
+                    default:
+                        currencySymbol.textContent = selectedCurrency || '$';
+                }
+            }
+        });
+    }
+
+    // Form validation with enhanced checks
+    const form = document.querySelector('.needs-validation');
+    form.addEventListener('submit', function(e) {
+        let isValid = true;
+        
+        // Check if month is selected
+        const monthSelect = document.getElementById('expense-month');
+        if (!monthSelect.value) {
+            showAmountFeedback(monthSelect, '❌ Please select an expense month', 'error');
+            isValid = false;
+        }
+        
+        // Validate amount fields and convert formatted amounts back to numeric
+        const amountFields = document.querySelectorAll('.amount-field');
+        amountFields.forEach(field => {
+            // Remove commas for submission
+            if (field.value) {
+                const rawValue = parseFloat(field.value.replace(/,/g, ''));
+                if (isNaN(rawValue) || rawValue <= 0) {
+                    showAmountFeedback(field, '❌ Please enter a valid amount', 'error');
+                    isValid = false;
+                } else {
+                    field.value = rawValue.toFixed(2);
+                }
+            } else {
+                showAmountFeedback(field, '❌ Amount is required', 'error');
+                isValid = false;
+            }
+        });
+        
+        // Standard form validation
+        if (!form.checkValidity()) {
+            isValid = false;
+        }
+        
+        if (!isValid) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        
+        form.classList.add('was-validated');
+    });
+
+    // Initialize
+    updateRemoveButtons();
+    updateTotals();
+    
+    // Initialize exchange rates for existing items
+    document.querySelectorAll('.currency-select').forEach(select => {
+        updateExchangeRateDefaults(select);
+    });
+    
+    // Handle month selection with easy dropdown
+    const monthSelect = document.getElementById('expense-month');
+    const periodFromHidden = document.getElementById('period-from-hidden');
+    const periodToHidden = document.getElementById('period-to-hidden');
+    const periodDisplay = document.getElementById('period-display');
+    
+    if (monthSelect) {
+        monthSelect.addEventListener('change', function() {
+            const selectedValue = this.value;
+            if (selectedValue) {
+                const [year, month] = selectedValue.split('-');
+                const firstDay = new Date(parseInt(year), parseInt(month) - 1, 1);
+                const lastDay = new Date(parseInt(year), parseInt(month), 0);
+                
+                // Format dates without timezone issues
+                const firstDayStr = `${year}-${month.padStart(2, '0')}-01`;
+                const lastDayStr = `${year}-${month.padStart(2, '0')}-${lastDay.getDate().toString().padStart(2, '0')}`;
+                
+                // Update hidden fields
+                periodFromHidden.value = firstDayStr;
+                periodToHidden.value = lastDayStr;
+                
+                // Update display
+                const monthNames = [
+                    'January', 'February', 'March', 'April', 'May', 'June',
+                    'July', 'August', 'September', 'October', 'November', 'December'
+                ];
+                const monthName = monthNames[parseInt(month) - 1];
+                periodDisplay.value = `${monthName} ${year} (${firstDayStr} to ${lastDayStr})`;
+            } else {
+                periodFromHidden.value = '';
+                periodToHidden.value = '';
+                periodDisplay.value = '';
+            }
+        });
+        
+        // Initialize with current selection
+        if (monthSelect.value) {
+            monthSelect.dispatchEvent(new Event('change'));
+        }
+    }
+    
+    // Amount input feedback functions
+    function showAmountFeedback(input, message, type = 'info') {
+        // Remove existing feedback
+        clearAmountFeedback(input);
+        
+        const feedback = document.createElement('div');
+        feedback.className = `amount-feedback ${type === 'error' ? 'text-danger' : type === 'warning' ? 'text-warning' : 'text-info'}`;
+        feedback.innerHTML = `<i class="fas fa-${type === 'error' ? 'exclamation-circle' : type === 'warning' ? 'exclamation-triangle' : 'info-circle'}"></i> ${message}`;
+        feedback.style.fontSize = '0.8rem';
+        feedback.style.marginTop = '2px';
+        
+        input.parentNode.insertAdjacentElement('afterend', feedback);
+        
+        // Auto-remove after delay
+        setTimeout(() => clearAmountFeedback(input), 3000);
+    }
+    
+    function clearAmountFeedback(input) {
+        const existing = input.parentNode.parentNode.querySelector('.amount-feedback');
+        if (existing) {
+            existing.remove();
+        }
+    }
+    
+    // Initialize page
+    updateRemoveButtons();
+    updateTotals();
+    
+    // Initialize item counter for edit mode
+    {% if claim.expense_items.all %}
+    itemCounter = {{ claim.expense_items.all|length }};
+    {% endif %}
+});
+</script>
+{% endblock %}

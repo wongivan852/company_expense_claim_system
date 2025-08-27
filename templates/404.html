@@ -1,0 +1,349 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Page Not Found - CG Global Entertainment{% endblock %}
+
+{% block content %}
+<div class="error-container">
+    <div class="row justify-content-center align-items-center min-vh-100">
+        <div class="col-md-8 col-lg-6">
+            <div class="card error-card shadow-lg">
+                <div class="card-body p-5 text-center">
+                    <!-- Error Animation -->
+                    <div class="error-animation mb-4">
+                        <div class="error-number">404</div>
+                        <div class="error-icon">
+                            <i class="fas fa-search"></i>
+                        </div>
+                    </div>
+                    
+                    <!-- Error Message -->
+                    <h2 class="error-title mb-3">Oops! Page Not Found</h2>
+                    <p class="text-muted mb-4">
+                        The page you're looking for seems to have wandered off. 
+                        It might have been moved, deleted, or you entered the wrong URL.
+                    </p>
+                    
+                    <!-- Suggestions -->
+                    <div class="suggestions mb-4">
+                        <h6 class="text-muted mb-3">What would you like to do?</h6>
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <a href="{% url 'home' %}" class="suggestion-card">
+                                    <i class="fas fa-home"></i>
+                                    <span>Go Home</span>
+                                </a>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <a href="{% url 'claims:claim_list' %}" class="suggestion-card">
+                                    <i class="fas fa-list"></i>
+                                    <span>My Claims</span>
+                                </a>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <a href="{% url 'claims:claim_create' %}" class="suggestion-card">
+                                    <i class="fas fa-plus"></i>
+                                    <span>New Claim</span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Action Buttons -->
+                    <div class="d-grid gap-2 d-md-block">
+                        <button onclick="history.back()" class="btn btn-outline-primary">
+                            <i class="fas fa-arrow-left me-2"></i>Go Back
+                        </button>
+                        <a href="{% url 'home' %}" class="btn btn-primary">
+                            <i class="fas fa-home me-2"></i>Go to Homepage
+                        </a>
+                    </div>
+                    
+                    <!-- Help Section -->
+                    <div class="help-section mt-4 p-3 bg-light rounded">
+                        <small class="text-muted">
+                            <i class="fas fa-question-circle me-2"></i>
+                            Still having trouble? Contact our support team or check the 
+                            <a href="#" class="text-decoration-none">help documentation</a>.
+                        </small>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Fun Facts -->
+            <div class="fun-fact mt-4 text-center">
+                <div class="card bg-transparent border-0">
+                    <div class="card-body">
+                        <small class="text-light opacity-75">
+                            <i class="fas fa-lightbulb me-2"></i>
+                            <strong>Did you know?</strong> 404 errors got their name from room 404 at CERN, 
+                            where the web was invented!
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+/* 404 Page Styles */
+body {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background-attachment: fixed;
+    min-height: 100vh;
+}
+
+.navbar, footer {
+    display: none !important;
+}
+
+.error-container {
+    padding: 20px;
+}
+
+/* Error Card */
+.error-card {
+    border: none;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+    animation: bounceIn 0.8s ease-out;
+}
+
+/* Error Animation */
+.error-animation {
+    position: relative;
+    margin-bottom: 2rem;
+}
+
+.error-number {
+    font-size: 6rem;
+    font-weight: 900;
+    color: #667eea;
+    text-shadow: 2px 2px 4px rgba(102, 126, 234, 0.3);
+    line-height: 1;
+    animation: pulse 2s ease-in-out infinite alternate;
+}
+
+.error-icon {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 2rem;
+    color: #764ba2;
+    animation: float 3s ease-in-out infinite;
+}
+
+/* Title */
+.error-title {
+    color: #333;
+    font-weight: 700;
+    font-size: 1.75rem;
+}
+
+/* Suggestions */
+.suggestions {
+    margin: 2rem 0;
+}
+
+.suggestion-card {
+    display: block;
+    padding: 1.5rem 1rem;
+    background: #f8f9fa;
+    border: 2px solid #e9ecef;
+    border-radius: 12px;
+    text-decoration: none;
+    color: #495057;
+    transition: all 0.3s ease;
+    height: 100%;
+}
+
+.suggestion-card:hover {
+    border-color: #667eea;
+    background: rgba(102, 126, 234, 0.1);
+    color: #667eea;
+    transform: translateY(-3px);
+    box-shadow: 0 10px 25px rgba(102, 126, 234, 0.15);
+}
+
+.suggestion-card i {
+    font-size: 1.5rem;
+    display: block;
+    margin-bottom: 0.5rem;
+}
+
+.suggestion-card span {
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+/* Buttons */
+.btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    border-radius: 12px;
+    padding: 0.75rem 1.5rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 30px rgba(102, 126, 234, 0.4);
+    background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+}
+
+.btn-outline-primary {
+    border: 2px solid #667eea;
+    color: #667eea;
+    border-radius: 12px;
+    padding: 0.75rem 1.5rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-outline-primary:hover {
+    background: #667eea;
+    border-color: #667eea;
+    transform: translateY(-2px);
+}
+
+/* Help Section */
+.help-section {
+    border: 1px solid #dee2e6;
+}
+
+/* Animations */
+@keyframes bounceIn {
+    0% {
+        opacity: 0;
+        transform: scale(0.3) translateY(100px);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1.05) translateY(-10px);
+    }
+    70% {
+        transform: scale(0.9) translateY(5px);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+    }
+    100% {
+        transform: scale(1.05);
+    }
+}
+
+@keyframes float {
+    0%, 100% {
+        transform: translate(-50%, -50%) translateY(0px);
+    }
+    50% {
+        transform: translate(-50%, -50%) translateY(-10px);
+    }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .error-number {
+        font-size: 4rem;
+    }
+    
+    .error-icon {
+        font-size: 1.5rem;
+    }
+    
+    .error-title {
+        font-size: 1.5rem;
+    }
+    
+    .suggestion-card {
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+}
+
+/* Fun fact card */
+.fun-fact .card {
+    background: rgba(255, 255, 255, 0.1) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    border-radius: 12px;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add some interactive elements
+    const errorNumber = document.querySelector('.error-number');
+    const suggestions = document.querySelectorAll('.suggestion-card');
+    
+    // Add click effect to 404 number
+    errorNumber.addEventListener('click', function() {
+        this.style.transform = 'scale(1.1)';
+        setTimeout(() => {
+            this.style.transform = 'scale(1)';
+        }, 200);
+    });
+    
+    // Add hover effects to suggestions
+    suggestions.forEach(card => {
+        card.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-5px) scale(1.02)';
+        });
+        
+        card.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0) scale(1)';
+        });
+    });
+    
+    // Easter egg: Konami code
+    let konamiCode = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'KeyB', 'KeyA'];
+    let userInput = [];
+    
+    document.addEventListener('keydown', function(e) {
+        userInput.push(e.code);
+        if (userInput.length > konamiCode.length) {
+            userInput.shift();
+        }
+        
+        if (JSON.stringify(userInput) === JSON.stringify(konamiCode)) {
+            // Easter egg activated!
+            errorNumber.style.background = 'linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4, #ffeaa7)';
+            errorNumber.style.backgroundSize = '300% 300%';
+            errorNumber.style.backgroundClip = 'text';
+            errorNumber.style.webkitBackgroundClip = 'text';
+            errorNumber.style.color = 'transparent';
+            errorNumber.style.animation = 'rainbow 2s ease-in-out infinite';
+            
+            // Add rainbow animation
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes rainbow {
+                    0% { background-position: 0% 50%; }
+                    50% { background-position: 100% 50%; }
+                    100% { background-position: 0% 50%; }
+                }
+            `;
+            document.head.appendChild(style);
+            
+            userInput = []; // Reset
+        }
+    });
+});
+</script>
+{% endblock %}

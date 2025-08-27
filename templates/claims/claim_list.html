@@ -1,0 +1,386 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My Claims - CG Global Entertainment{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="display-5">
+        <i class="fas fa-file-invoice-dollar text-primary"></i>
+        My Expense Claims
+    </h1>
+    <a href="{% url 'claims:claim_create' %}" class="btn btn-primary btn-lg">
+        <i class="fas fa-plus-circle"></i> New Claim
+    </a>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label for="status" class="form-label">Status</label>
+                <select name="status" id="status" class="form-select">
+                    <option value="">All Statuses</option>
+                    <option value="draft" {% if current_filters.status == 'draft' %}selected{% endif %}>Draft</option>
+                    <option value="pending" {% if current_filters.status == 'pending' %}selected{% endif %}>Pending</option>
+                    <option value="approved" {% if current_filters.status == 'approved' %}selected{% endif %}>Approved</option>
+                    <option value="rejected" {% if current_filters.status == 'rejected' %}selected{% endif %}>Rejected</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="company" class="form-label">Company</label>
+                <select name="company" id="company" class="form-select">
+                    <option value="">All Companies</option>
+                    {% for company in companies %}
+                    <option value="{{ company.id }}" {% if current_filters.company == company.id|stringformat:"s" %}selected{% endif %}>
+                        {{ company.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="date_from" class="form-label">From Date</label>
+                <input type="date" name="date_from" id="date_from" class="form-control" value="{{ current_filters.date_from }}">
+            </div>
+            <div class="col-md-3">
+                <label for="date_to" class="form-label">To Date</label>
+                <input type="date" name="date_to" id="date_to" class="form-control" value="{{ current_filters.date_to }}">
+            </div>
+            <div class="col-12">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-search"></i> Filter
+                </button>
+                <a href="{% url 'claims:claim_list' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-times"></i> Clear
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Claims Table -->
+<div class="card">
+    <div class="card-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0">
+                <i class="fas fa-list"></i> Claims List
+                <span class="badge bg-light text-dark ms-2">{{ claims|length }} claims</span>
+            </h5>
+            <div class="btn-group">
+                <button type="button" class="btn btn-outline-secondary" onclick="selectAll()">
+                    <i class="fas fa-check-square"></i> Select All
+                </button>
+                <button type="button" class="btn btn-outline-secondary" onclick="deselectAll()">
+                    <i class="fas fa-square"></i> Deselect All
+                </button>
+                <button type="button" class="btn btn-primary" onclick="printSelected()" id="printBtn" disabled>
+                    <i class="fas fa-print"></i> Print Selected
+                </button>
+            </div>
+        </div>
+    </div>
+    <div class="card-body">
+        {% if claims %}
+        <div class="table-responsive">
+            <table class="table table-hover data-table">
+                <thead>
+                    <tr>
+                        <th width="40">
+                            <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll()">
+                        </th>
+                        <th>Claim #</th>
+                        <th>Event/Purpose</th>
+                        <th>Company</th>
+                        <th>Period</th>
+                        <th>Total Amount</th>
+                        <th>Status</th>
+                        <th>Created</th>
+                        <th class="no-sort">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for claim in claims %}
+                    <tr>
+                        <td>
+                            <input type="checkbox" class="claim-checkbox" value="{{ claim.pk }}" 
+                                   data-claim-number="{{ claim.claim_number }}" onchange="updatePrintButton()">
+                        </td>
+                        <td>
+                            <strong class="text-primary">{{ claim.claim_number }}</strong>
+                        </td>
+                        <td>
+                            <strong>{{ claim.event_name|truncatechars:40 }}</strong>
+                            {% if claim.expense_items.count %}
+                            <br><small class="text-muted">{{ claim.expense_items.count }} items</small>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge bg-info">{{ claim.company.code }}</span>
+                        </td>
+                        <td>
+                            <small>
+                                {{ claim.period_from|date:"M d" }} - 
+                                {{ claim.period_to|date:"M d, Y" }}
+                            </small>
+                        </td>
+                        <td>
+                            <strong class="text-success">
+                                {{ claim.total_amount|floatformat:2 }} 
+                                {{ claim.primary_currency|default:"HKD" }}
+                            </strong>
+                        </td>
+                        <td>
+                            {% if claim.status == 'approved' %}
+                                <span class="badge bg-success">
+                                    <i class="fas fa-check-circle"></i> Approved
+                                </span>
+                            {% elif claim.status == 'pending' %}
+                                <span class="badge bg-warning text-dark">
+                                    <i class="fas fa-clock"></i> Pending
+                                </span>
+                            {% elif claim.status == 'rejected' %}
+                                <span class="badge bg-danger">
+                                    <i class="fas fa-times-circle"></i> Rejected
+                                </span>
+                            {% else %}
+                                <span class="badge bg-secondary">
+                                    <i class="fas fa-edit"></i> Draft
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <small class="text-muted">
+                                {{ claim.created_at|date:"M d, Y" }}<br>
+                                {{ claim.created_at|time:"H:i" }}
+                            </small>
+                        </td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                <a href="{% url 'claims:claim_detail' claim.pk %}" 
+                                   class="btn btn-sm btn-outline-primary" 
+                                   data-bs-toggle="tooltip" 
+                                   title="View Details">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                {% if claim.status == 'draft' %}
+                                <a href="{% url 'claims:claim_edit' claim.pk %}" 
+                                   class="btn btn-sm btn-outline-warning"
+                                   data-bs-toggle="tooltip" 
+                                   title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                {% endif %}
+                                {% if claim.can_delete %}
+                                <button type="button" 
+                                        class="btn btn-sm btn-outline-danger delete-claim" 
+                                        data-claim-id="{{ claim.pk }}"
+                                        data-claim-number="{{ claim.claim_number }}"
+                                        data-bs-toggle="tooltip" 
+                                        title="Delete Draft Claim">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if is_paginated %}
+        <nav aria-label="Claims pagination" class="mt-4">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page=1{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.company %}&company={{ request.GET.company }}{% endif %}">
+                        <i class="fas fa-angle-double-left"></i>
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.company %}&company={{ request.GET.company }}{% endif %}">
+                        <i class="fas fa-angle-left"></i>
+                    </a>
+                </li>
+                {% endif %}
+
+                {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                <li class="page-item active">
+                    <span class="page-link">{{ num }}</span>
+                </li>
+                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ num }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.company %}&company={{ request.GET.company }}{% endif %}">{{ num }}</a>
+                </li>
+                {% endif %}
+                {% endfor %}
+
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.company %}&company={{ request.GET.company }}{% endif %}">
+                        <i class="fas fa-angle-right"></i>
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.company %}&company={{ request.GET.company }}{% endif %}">
+                        <i class="fas fa-angle-double-right"></i>
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+
+        {% else %}
+        <!-- Empty state -->
+        <div class="text-center py-5">
+            <i class="fas fa-file-invoice fa-4x text-muted mb-3"></i>
+            <h4 class="text-muted">No claims found</h4>
+            <p class="text-muted">
+                {% if current_filters.status or current_filters.company %}
+                    Try adjusting your filters or create a new claim.
+                {% else %}
+                    You haven't created any expense claims yet.
+                {% endif %}
+            </p>
+            <a href="{% url 'claims:claim_create' %}" class="btn btn-primary btn-lg">
+                <i class="fas fa-plus-circle"></i> Create Your First Claim
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteClaimModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-exclamation-triangle text-warning"></i>
+                    Confirm Deletion
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete claim <strong id="deleteClaimNumber"></strong>?</p>
+                <p class="text-danger">
+                    <i class="fas fa-warning"></i>
+                    This action cannot be undone.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteClaimForm" method="post" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash"></i> Delete
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Delete claim functionality
+    const deleteButtons = document.querySelectorAll('.delete-claim');
+    const deleteModal = document.getElementById('deleteClaimModal');
+    const deleteForm = document.getElementById('deleteClaimForm');
+    const deleteClaimNumber = document.getElementById('deleteClaimNumber');
+
+    deleteButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const claimId = this.dataset.claimId;
+            const claimNumber = this.dataset.claimNumber;
+            
+            deleteClaimNumber.textContent = claimNumber;
+            deleteForm.action = `/claims/${claimId}/delete/`;
+            
+            new bootstrap.Modal(deleteModal).show();
+        });
+    });
+
+    // Auto-submit filter form on select change
+    const filterSelects = document.querySelectorAll('#status, #company');
+    filterSelects.forEach(select => {
+        select.addEventListener('change', function() {
+            // Optional: auto-submit on change
+            // this.form.submit();
+        });
+    });
+});
+
+// Selection functionality
+function selectAll() {
+    const checkboxes = document.querySelectorAll('.claim-checkbox');
+    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = true;
+    });
+    selectAllCheckbox.checked = true;
+    updatePrintButton();
+}
+
+function deselectAll() {
+    const checkboxes = document.querySelectorAll('.claim-checkbox');
+    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = false;
+    });
+    selectAllCheckbox.checked = false;
+    updatePrintButton();
+}
+
+function toggleSelectAll() {
+    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+    const checkboxes = document.querySelectorAll('.claim-checkbox');
+    
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = selectAllCheckbox.checked;
+    });
+    updatePrintButton();
+}
+
+function updatePrintButton() {
+    const checkedBoxes = document.querySelectorAll('.claim-checkbox:checked');
+    const printBtn = document.getElementById('printBtn');
+    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+    
+    printBtn.disabled = checkedBoxes.length === 0;
+    
+    // Update select all checkbox state
+    const allCheckboxes = document.querySelectorAll('.claim-checkbox');
+    const allChecked = allCheckboxes.length > 0 && Array.from(allCheckboxes).every(cb => cb.checked);
+    const someChecked = Array.from(allCheckboxes).some(cb => cb.checked);
+    
+    selectAllCheckbox.checked = allChecked;
+    selectAllCheckbox.indeterminate = someChecked && !allChecked;
+}
+
+function printSelected() {
+    const checkedBoxes = document.querySelectorAll('.claim-checkbox:checked');
+    if (checkedBoxes.length === 0) {
+        alert('Please select at least one claim to print.');
+        return;
+    }
+    
+    const claimIds = Array.from(checkedBoxes).map(cb => cb.value);
+    const claimNumbers = Array.from(checkedBoxes).map(cb => cb.dataset.claimNumber).join(', ');
+    
+    // Confirm the action
+    if (confirm(`Print ${checkedBoxes.length} selected claim(s): ${claimNumbers}?`)) {
+        // Open print view in new window/tab
+        const url = `/claims/print/?ids=${claimIds.join(',')}`;
+        window.open(url, '_blank');
+    }
+}
+</script>
+{% endblock %}

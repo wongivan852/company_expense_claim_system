@@ -1,0 +1,229 @@
+{% extends 'base_simple.html' %}
+{% load static %}
+
+{% block title %}Dashboard - Krystal Group{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="display-4">
+                    <i class="fas fa-tachometer-alt text-primary"></i>
+                    Dashboard
+                </h1>
+                {% if user.is_authenticated %}
+                <div>
+                    <a href="/claims/create/" class="btn btn-primary btn-lg">
+                        <i class="fas fa-plus-circle"></i> New Claim
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    {% if user.is_authenticated %}
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="card bg-primary text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h5 class="card-title">Total Claims</h5>
+                            <h2 class="mb-0">{{ user_stats.total_claims|default:0 }}</h2>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-file-invoice-dollar fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="card bg-success text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h5 class="card-title">Approved</h5>
+                            <h2 class="mb-0">{{ user_stats.approved_claims|default:0 }}</h2>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-check-circle fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="card bg-warning text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h5 class="card-title">Pending</h5>
+                            <h2 class="mb-0">{{ user_stats.pending_claims|default:0 }}</h2>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-clock fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="card bg-info text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h5 class="card-title">Total Amount</h5>
+                            <h2 class="mb-0">${{ user_stats.total_amount|default:0|floatformat:2 }}</h2>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-dollar-sign fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-plus-circle fa-3x text-primary mb-3"></i>
+                    <h5>Create Claim</h5>
+                    <a href="/claims/create/" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> New Claim
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-list fa-3x text-success mb-3"></i>
+                    <h5>View Claims</h5>
+                    <a href="/claims/" class="btn btn-success">
+                        <i class="fas fa-list"></i> All Claims
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-chart-bar fa-3x text-info mb-3"></i>
+                    <h5>Reports</h5>
+                    <a href="/reports/" class="btn btn-info">
+                        <i class="fas fa-chart-bar"></i> View Reports
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-user fa-3x text-warning mb-3"></i>
+                    <h5>Profile</h5>
+                    <a href="/accounts/profile/" class="btn btn-warning">
+                        <i class="fas fa-user-edit"></i> Edit Profile
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Claims -->
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-history me-2"></i>
+                        Recent Claims
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_claims %}
+                        {% for claim in recent_claims %}
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <h6 class="mb-1">{{ claim.title }}</h6>
+                                <small class="text-muted">
+                                    <i class="fas fa-dollar-sign me-1"></i>
+                                    ${{ claim.total_amount|floatformat:2 }}
+                                </small>
+                            </div>
+                            <span class="badge bg-{{ claim.status|lower }}">
+                                {{ claim.get_status_display }}
+                            </span>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No recent claims</h5>
+                            <p class="text-muted">Start by creating your first expense claim!</p>
+                            <a href="/claims/create/" class="btn btn-primary">
+                                <i class="fas fa-plus me-2"></i>Create Claim
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-bell me-2"></i>
+                        System Status
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span>Server Status</span>
+                        <span class="badge bg-success">Online</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span>Database</span>
+                        <span class="badge bg-success">Connected</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span>Last Updated</span>
+                        <small class="text-muted">Just now</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% else %}
+    <!-- Not authenticated view -->
+    <div class="row justify-content-center">
+        <div class="col-md-8 text-center">
+            <div class="card">
+                <div class="card-body py-5">
+                    <i class="fas fa-lock fa-4x text-muted mb-4"></i>
+                    <h2>Welcome to Krystal Group</h2>
+                    <p class="lead text-muted mb-4">Please log in to access your expense management dashboard</p>
+                    <a href="/accounts/login/" class="btn btn-primary btn-lg me-3">
+                        <i class="fas fa-sign-in-alt me-2"></i>Login
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

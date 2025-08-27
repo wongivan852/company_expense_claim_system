@@ -104,14 +104,26 @@ DATABASES = {
         "PASSWORD": config('DB_PASSWORD', default=''),
         "HOST": config('DB_HOST', default='localhost'),
         "PORT": config('DB_PORT', default='5432'),
+        "OPTIONS": {
+            # Connection pooling settings
+            "MAX_CONNS": 20,
+            "OPTIONS": {
+                "MAX_CONNS": 20,
+            }
+        },
+        # Connection lifetime in seconds (0 = disabled for pgbouncer compatibility)
+        "CONN_MAX_AGE": config('DB_CONN_MAX_AGE', default=60, cast=int),
+        # Connection health checks
+        "CONN_HEALTH_CHECKS": True,
     }
 }
 
-# Fallback to SQLite for development
-if config('USE_SQLITE', default=False, cast=bool):
+# Fallback to SQLite for development with optimizations
+if config('USE_SQLITE', default=True, cast=bool):
     DATABASES['default'] = {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
+        'CONN_MAX_AGE': 60,
     }
 
 
@@ -210,10 +222,21 @@ REDIS_URL = config('REDIS_URL', default='redis://localhost:6379/0')
 
 CACHES = {
     'default': {
-        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
-        'LOCATION': REDIS_URL,
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'expense_system_cache',
+        'TIMEOUT': 3600,  # Default timeout 1 hour
+        'OPTIONS': {
+            'MAX_ENTRIES': 1000,
+        }
     }
 }
+
+# Session configuration for performance
+SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
+SESSION_CACHE_ALIAS = 'default'
+SESSION_COOKIE_AGE = config('SESSION_COOKIE_AGE', default=86400, cast=int)  # 24 hours
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False
+SESSION_SAVE_EVERY_REQUEST = False
 
 # Celery Configuration for Background Tasks
 CELERY_BROKER_URL = REDIS_URL
@@ -243,7 +266,7 @@ SECURE_SSL_REDIRECT = config('SECURE_SSL_REDIRECT', default=False, cast=bool)
 
 # Login URLs
 LOGIN_URL = '/accounts/login/'
-LOGIN_REDIRECT_URL = '/dashboard/'
+LOGIN_REDIRECT_URL = '/dashboard/'  # Redirect to dashboard after login
 LOGOUT_REDIRECT_URL = '/accounts/login/'
 
 # Logging Configuration

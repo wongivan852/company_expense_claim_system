@@ -10,7 +10,15 @@ import uuid
 
 
 class Company(models.Model):
-    """Company model for different business entities."""
+    """Enhanced company model for the 4 business entities."""
+    
+    # Business entities from requirements
+    COMPANY_TYPES = [
+        ('holding', _('Holding Company')),
+        ('institute', _('Institute/Education')),
+        ('technology', _('Technology Company')),
+        ('entertainment', _('Entertainment Company')),
+    ]
     
     name = models.CharField(
         _("Company Name"),
@@ -18,17 +26,98 @@ class Company(models.Model):
         help_text=_("Official company name")
     )
     
+    name_chinese = models.CharField(
+        _("Chinese Name"),
+        max_length=200,
+        blank=True,
+        help_text=_("Company name in Chinese")
+    )
+    
+    name_simplified = models.CharField(
+        _("Simplified Chinese"),
+        max_length=200,
+        blank=True,
+        help_text=_("Company name in Simplified Chinese")
+    )
+    
     code = models.CharField(
         _("Company Code"),
         max_length=20,
         unique=True,
-        help_text=_("Short company identifier (e.g., CGGE)")
+        help_text=_("Short company identifier (e.g., CGEL, KIL)")
+    )
+    
+    company_type = models.CharField(
+        _("Company Type"),
+        max_length=20,
+        choices=COMPANY_TYPES,
+        default='holding'
     )
     
     address = models.TextField(
         _("Address"),
         blank=True,
         help_text=_("Company address")
+    )
+    
+    address_chinese = models.TextField(
+        _("Chinese Address"),
+        blank=True,
+        help_text=_("Company address in Chinese")
+    )
+    
+    # Business details
+    registration_number = models.CharField(
+        _("Registration Number"),
+        max_length=50,
+        blank=True,
+        help_text=_("Business registration number")
+    )
+    
+    tax_id = models.CharField(
+        _("Tax ID"),
+        max_length=50,
+        blank=True,
+        help_text=_("Tax identification number")
+    )
+    
+    base_currency = models.ForeignKey(
+        'Currency',
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        help_text=_("Primary currency for this company")
+    )
+    
+    # Regional settings
+    timezone = models.CharField(
+        _("Timezone"),
+        max_length=50,
+        default='Asia/Hong_Kong',
+        help_text=_("Company timezone")
+    )
+    
+    country_code = models.CharField(
+        _("Country Code"),
+        max_length=2,
+        default='HK',
+        help_text=_("ISO country code")
+    )
+    
+    # Business configuration
+    requires_manager_approval = models.BooleanField(
+        _("Requires Manager Approval"),
+        default=True,
+        help_text=_("Whether expenses need manager approval")
+    )
+    
+    approval_threshold = models.DecimalField(
+        _("Approval Threshold"),
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text=_("Amount above which additional approval is needed")
     )
     
     is_active = models.BooleanField(_("Active"), default=True)
@@ -39,25 +128,64 @@ class Company(models.Model):
         verbose_name = _("Company")
         verbose_name_plural = _("Companies")
         ordering = ['name']
+        indexes = [
+            models.Index(fields=['code']),
+            models.Index(fields=['is_active', 'company_type']),
+        ]
     
     def __str__(self):
+        if self.name_chinese:
+            return f"{self.name} ({self.name_chinese})"
+        return self.name
+    
+    def get_display_name(self, language='en'):
+        """Get company name in specified language."""
+        if language == 'zh-hans':
+            return self.name_simplified or self.name_chinese or self.name
+        elif language == 'zh-hant':
+            return self.name_chinese or self.name
         return self.name
 
 
 class ExpenseCategory(models.Model):
-    """Categories for different types of expenses."""
+    """Enhanced categories matching PDF form structure."""
+    
+    # Business category codes from PDF form
+    CATEGORY_CODES = [
+        ('keynote_speech', '主題演講'),
+        ('sponsor_guest', '贊助嘉賓'),
+        ('course_operations', '課程運營推廣'),
+        ('exhibition_procurement', '展覽采購'),
+        ('other_misc', '其他雜項'),
+        ('business_negotiation', '業務商談'),
+        ('instructor_misc', '講師雜項'),
+        ('procurement_misc', '采購雜項'),
+        ('transportation', '交通'),
+    ]
+    
+    code = models.CharField(
+        _("Category Code"),
+        max_length=50,
+        unique=True,
+        help_text=_("Internal code for category")
+    )
     
     name = models.CharField(
         _("Category Name"),
-        max_length=100,
-        unique=True
+        max_length=100
     )
     
     name_chinese = models.CharField(
         _("Chinese Name"),
         max_length=100,
-        blank=True,
         help_text=_("Category name in Chinese")
+    )
+    
+    name_simplified = models.CharField(
+        _("Simplified Chinese"),
+        max_length=100,
+        blank=True,
+        help_text=_("Category name in Simplified Chinese")
     )
     
     description = models.TextField(
@@ -72,16 +200,46 @@ class ExpenseCategory(models.Model):
         help_text=_("Whether this category requires receipt attachment")
     )
     
+    # Business logic fields
+    is_travel_related = models.BooleanField(
+        _("Travel Related"),
+        default=False,
+        help_text=_("Whether this is a travel-related expense")
+    )
+    
+    requires_participants = models.BooleanField(
+        _("Requires Participants"),
+        default=False,
+        help_text=_("Whether participant details are required")
+    )
+    
+    sort_order = models.PositiveIntegerField(
+        _("Sort Order"),
+        default=0,
+        help_text=_("Order for display in forms")
+    )
+    
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
     
     class Meta:
         verbose_name = _("Expense Category")
         verbose_name_plural = _("Expense Categories")
-        ordering = ['name']
+        ordering = ['sort_order', 'name']
+        indexes = [
+            models.Index(fields=['code']),
+            models.Index(fields=['is_active', 'sort_order']),
+        ]
     
     def __str__(self):
-        if self.name_chinese:
-            return f"{self.name} ({self.name_chinese})"
+        return f"{self.name} ({self.name_chinese})"
+    
+    def get_display_name(self, language='en'):
+        """Get category name in specified language."""
+        if language == 'zh-hans':
+            return self.name_simplified or self.name_chinese
+        elif language == 'zh-hant':
+            return self.name_chinese
         return self.name
 
 
@@ -344,12 +502,54 @@ class ExpenseClaim(models.Model):
             user != self.claimant
         )
     
+    def can_delete(self, user):
+        """Check if user can delete this claim."""
+        # Only allow deletion of draft claims by the owner or admin users
+        return (
+            self.status == 'draft' and 
+            (self.claimant == user or user.is_staff)
+        )
+    
     def update_totals(self):
         """Update total amounts from line items."""
         items = self.expense_items.all()
         self.total_amount_original = sum(item.original_amount for item in items)
         self.total_amount_hkd = sum(item.amount_hkd for item in items)
         self.save(update_fields=['total_amount_original', 'total_amount_hkd'])
+    
+    @property
+    def total_amount(self):
+        """Get total amount in HKD for display."""
+        return self.total_amount_hkd
+    
+    @property
+    def primary_currency(self):
+        """Get primary currency code."""
+        return 'HKD'  # All totals are converted to HKD
+    
+    def add_expense_item(self, **item_data):
+        """Safely add an expense item with proper item number assignment."""
+        from django.db import transaction
+        
+        with transaction.atomic():
+            # Lock the claim to prevent concurrent modifications
+            claim = ExpenseClaim.objects.select_for_update().get(pk=self.pk)
+            
+            # Get the next item number
+            last_item = ExpenseItem.objects.filter(
+                expense_claim=claim
+            ).order_by('-item_number').first()
+            
+            next_item_number = (last_item.item_number + 1) if last_item else 1
+            
+            # Create the expense item
+            item_data['expense_claim'] = claim
+            item_data['item_number'] = next_item_number
+            
+            expense_item = ExpenseItem(**item_data)
+            expense_item.save()
+            
+            return expense_item
 
 
 class ExpenseItem(models.Model):
@@ -469,16 +669,39 @@ class ExpenseItem(models.Model):
         
         # Auto-assign item number if not provided
         if not self.item_number:
-            last_item = ExpenseItem.objects.filter(
-                expense_claim=self.expense_claim
-            ).order_by('-item_number').first()
-            
-            self.item_number = (last_item.item_number + 1) if last_item else 1
+            from django.db import transaction
+            try:
+                with transaction.atomic():
+                    # Use select_for_update to prevent race conditions
+                    claim = ExpenseClaim.objects.select_for_update().get(pk=self.expense_claim.pk)
+                    existing_items = ExpenseItem.objects.filter(
+                        expense_claim=claim
+                    ).order_by('-item_number')
+                    
+                    last_item = existing_items.first()
+                    self.item_number = (last_item.item_number + 1) if last_item else 1
+            except Exception as e:
+                # If there's still a race condition, try a few times with incremental numbers
+                for attempt in range(1, 10):  # Try up to item number 10
+                    try:
+                        if not ExpenseItem.objects.filter(
+                            expense_claim=self.expense_claim, 
+                            item_number=attempt
+                        ).exists():
+                            self.item_number = attempt
+                            break
+                    except Exception:
+                        continue
+                else:
+                    # If all else fails, use a timestamp-based approach
+                    import time
+                    self.item_number = int(str(int(time.time() * 1000))[-4:])
         
         super().save(*args, **kwargs)
         
-        # Update claim totals
-        self.expense_claim.update_totals()
+        # Update claim totals (but avoid infinite recursion during bulk operations)
+        if not getattr(self, '_skip_total_update', False):
+            self.expense_claim.update_totals()
 
 
 class ClaimComment(models.Model):

@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Combined Expense Claims - {{ combined_data.claim_numbers }}</title>
+    <style>
+        /* Print-specific styles */
+        @media print {
+            @page {
+                margin: 0.5in;
+                size: A4;
+            }
+            .no-print { display: none; }
+            .page-break { page-break-before: always; }
+        }
+        
+        /* Base styles matching PDF format */
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 11px;
+            line-height: 1.2;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        .claim-container {
+            width: 100%;
+            margin-bottom: 40px;
+        }
+        
+        .claim-header {
+            text-align: left;
+            margin-bottom: 20px;
+        }
+        
+        .company-name {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .claim-title {
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        
+        .claim-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        
+        .info-left, .info-right {
+            width: 48%;
+        }
+        
+        .info-line {
+            margin-bottom: 5px;
+        }
+        
+        /* Table styles matching PDF */
+        .expense-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .expense-table th,
+        .expense-table td {
+            border: 1px solid #000;
+            padding: 4px;
+            text-align: left;
+            vertical-align: top;
+        }
+        
+        .expense-table th {
+            background-color: #f0f0f0;
+            font-weight: bold;
+            text-align: center;
+        }
+        
+        .expense-table .item-col { width: 30px; }
+        .expense-table .date-col { width: 60px; }
+        .expense-table .desc-col { width: 250px; }
+        .expense-table .currency-col { width: 50px; }
+        .expense-table .category-cols { width: 40px; }
+        .expense-table .exchange-col { width: 50px; }
+        .expense-table .total-col { width: 60px; }
+        
+        /* Category columns - horizontal labels */
+        .category-header {
+            font-size: 8px;
+            text-align: center;
+            padding: 4px 2px !important;
+            line-height: 1.1;
+            word-wrap: break-word;
+        }
+        
+        .category-cols { 
+            width: 35px; 
+            min-width: 35px;
+            max-width: 35px;
+        }
+        
+        .amount-cell {
+            text-align: right;
+            font-family: monospace;
+        }
+        
+        .total-row {
+            font-weight: bold;
+            background-color: #f8f8f8;
+        }
+        
+        .total-row td {
+            font-weight: bold;
+        }
+        
+        /* Approval section */
+        .approval-section {
+            margin-top: 30px;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .approval-box {
+            border: 1px solid #000;
+            padding: 10px;
+            width: 200px;
+            height: 50px;
+        }
+        
+        .approval-label {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        /* Print controls */
+        .print-controls {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            margin: 0 5px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+        
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+        
+        .btn:hover {
+            opacity: 0.8;
+        }
+        
+        /* Receipt images placeholder */
+        .receipt-note {
+            font-size: 9px;
+            font-style: italic;
+            color: #666;
+        }
+        
+        /* Combined claims info */
+        .claims-info {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            font-size: 10px;
+        }
+        
+        .claims-info strong {
+            color: #495057;
+        }
+    </style>
+</head>
+<body>
+    <!-- Print Controls -->
+    <div class="print-controls no-print">
+        <button onclick="window.print()" class="btn btn-primary">
+            <i class="fas fa-print"></i> Print
+        </button>
+        <button onclick="window.close()" class="btn btn-secondary">
+            <i class="fas fa-times"></i> Close
+        </button>
+    </div>
+
+    <div class="claim-container">
+        <!-- Header -->
+        <div class="claim-header">
+            <div class="company-name">{{ combined_data.company_info }}</div>
+            <div class="claim-title">{{ combined_data.event_name }}</div>
+        </div>
+        
+        <!-- Combined Claims Information -->
+        <div class="claims-info no-print">
+            <div><strong>Combined Claims:</strong> {{ combined_data.claim_numbers }}</div>
+            <div><strong>Total Claims:</strong> {{ combined_data.claims_count }}</div>
+            <div><strong>Total Items:</strong> {{ combined_data.expense_items|length }}</div>
+        </div>
+        
+        <!-- Basic Information -->
+        <div class="claim-info">
+            <div class="info-left">
+                <div class="info-line"><strong>Claim made by:</strong> {{ combined_data.claimant_name }}</div>
+            </div>
+            <div class="info-right">
+                <div class="info-line"><strong>Period:</strong> {{ combined_data.period_from|date:"M d" }}-{{ combined_data.period_to|date:"d, Y" }}</div>
+            </div>
+        </div>
+        
+        <!-- Combined Expense Items Table -->
+        <table class="expense-table">
+            <thead>
+                <tr>
+                    <th rowspan="2" class="item-col">Item</th>
+                    <th rowspan="2" class="date-col">Date</th>
+                    <th rowspan="2" class="desc-col">Description</th>
+                    <th rowspan="2" class="currency-col">Original Currency</th>
+                    <!-- Dynamic Category Headers - matching PDF structure with Chinese labels -->
+                    {% for category in combined_data.category_display_info %}
+                    <th class="category-cols category-header">{{ category.zh_label }}</th>
+                    {% endfor %}
+                    <th rowspan="2" class="exchange-col">Exchange</th>
+                    <th rowspan="2" class="total-col">Total(HK)</th>
+                </tr>
+                <tr>
+                    <!-- Second row for English category labels -->
+                    {% for category in combined_data.category_display_info %}
+                    <th class="category-cols" style="font-size: 7px; text-align: center;">{{ category.en_label|slice:":8" }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in combined_data.expense_items %}
+                <tr>
+                    <td class="item-col">{{ item.item_number }}</td>
+                    <td class="date-col">{{ item.expense_date|date:"M d" }}</td>
+                    <td class="desc-col">
+                        {{ item.description }}
+                        {% if item.description_chinese %}
+                        <br><em>{{ item.description_chinese }}</em>
+                        {% endif %}
+                        {% if item.participants %}
+                        <br><small>({{ item.participants }})</small>
+                        {% endif %}
+                        {% if not item.has_receipt %}
+                        <br><span class="receipt-note">{{ item.receipt_notes|default:"without receipt" }}</span>
+                        {% else %}
+                        {% if item.receipt_notes %}
+                        <br><span class="receipt-note">{{ item.receipt_notes }}</span>
+                        {% endif %}
+                        {% endif %}
+                        <!-- Show which claim this item came from -->
+                        <br><small style="color: #6c757d;">[{{ item.claim_number }}]</small>
+                    </td>
+                    <td class="currency-col">
+                        {{ item.currency.code }}<br>{{ item.original_amount|floatformat:0 }}
+                    </td>
+                    
+                    <!-- Dynamic Category Amount Columns - only show categories with amounts -->
+                    {% for category in combined_data.category_display_info %}
+                        {% if item.category.code == category.code %}
+                            <td class="amount-cell category-cols">{{ item.amount_hkd|floatformat:2 }}</td>
+                        {% else %}
+                            <td class="category-cols"></td>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    <td class="amount-cell exchange-col">
+                        {% if item.exchange_rate == 1 %}
+                            1
+                        {% else %}
+                            {{ item.exchange_rate|floatformat:3 }}
+                        {% endif %}
+                    </td>
+                    <td class="amount-cell total-col">{{ item.amount_hkd|floatformat:2 }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="{{ combined_data.category_display_info|length|add:6 }}" class="text-center">No expense items found.</td>
+                </tr>
+                {% endfor %}
+                
+                <!-- Total Row -->
+                <tr class="total-row">
+                    <td colspan="4"><strong>Total</strong></td>
+                    <!-- Dynamic category totals - only show categories with amounts -->
+                    {% for category in combined_data.category_display_info %}
+                        <td class="amount-cell">{{ category.amount|floatformat:2 }}</td>
+                    {% endfor %}
+                    <td></td>
+                    <td class="amount-cell"><strong>{{ combined_data.total_hkd|floatformat:2 }}</strong></td>
+                </tr>
+            </tbody>
+        </table>
+        
+        <!-- Approval Section -->
+        <div class="approval-section">
+            <div class="approval-box">
+                <div class="approval-label">Claim checked by</div>
+                <!-- Show first approver info if any claim was checked -->
+                {% if combined_data.checked_by %}
+                    <div>{{ combined_data.checked_by.get_full_name }}</div>
+                    <div><small>{{ combined_data.checked_at|date:"M d, Y" }}</small></div>
+                {% endif %}
+            </div>
+            <div class="approval-box">
+                <div class="approval-label">Approved</div>
+                <!-- Show first approver info if any claim was approved -->
+                {% if combined_data.approved_by %}
+                    <div>{{ combined_data.approved_by.get_full_name }}</div>
+                    <div><small>{{ combined_data.approved_at|date:"M d, Y" }}</small></div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Combined Claims Information Footer -->
+        <div style="margin-top: 20px; font-size: 10px; color: #666;">
+            <div><strong>Combined Claim Numbers:</strong> {{ combined_data.claim_numbers }}</div>
+            <div><strong>Generated:</strong> {{ print_date|date:"F d, Y g:i A" }}</div>
+            <div><strong>Total Combined Amount:</strong> {{ combined_data.total_hkd|floatformat:2 }} HKD</div>
+            <div><strong>Period Coverage:</strong> {{ combined_data.period_from|date:"F d, Y" }} to {{ combined_data.period_to|date:"F d, Y" }}</div>
+        </div>
+    </div>
+
+    <script>
+        // Auto-print when page loads (optional)
+        // window.onload = function() { window.print(); }
+    </script>
+</body>
+</html>

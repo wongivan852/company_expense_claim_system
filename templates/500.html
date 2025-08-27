@@ -1,0 +1,359 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Server Error - CG Global Entertainment{% endblock %}
+
+{% block content %}
+<div class="error-container">
+    <div class="row justify-content-center align-items-center min-vh-100">
+        <div class="col-md-8 col-lg-6">
+            <div class="card error-card shadow-lg">
+                <div class="card-body p-5 text-center">
+                    <!-- Error Animation -->
+                    <div class="error-animation mb-4">
+                        <div class="error-number">500</div>
+                        <div class="error-icon">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                    </div>
+                    
+                    <!-- Error Message -->
+                    <h2 class="error-title mb-3">Internal Server Error</h2>
+                    <p class="text-muted mb-4">
+                        Something went wrong on our end. Our technical team has been notified 
+                        and is working to fix this issue. Please try again in a few minutes.
+                    </p>
+                    
+                    <!-- Status Updates -->
+                    <div class="status-updates mb-4">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <div class="status-item">
+                                    <i class="fas fa-tools text-warning"></i>
+                                    <div class="ms-3">
+                                        <h6>We're on it!</h6>
+                                        <small class="text-muted">Our team is investigating</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="status-item">
+                                    <i class="fas fa-shield-alt text-success"></i>
+                                    <div class="ms-3">
+                                        <h6>Data is safe</h6>
+                                        <small class="text-muted">Your information is secure</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Action Buttons -->
+                    <div class="d-grid gap-2 d-md-block mb-4">
+                        <button onclick="location.reload()" class="btn btn-primary">
+                            <i class="fas fa-redo me-2"></i>Try Again
+                        </button>
+                        <a href="{% url 'home' %}" class="btn btn-outline-primary">
+                            <i class="fas fa-home me-2"></i>Go to Homepage
+                        </a>
+                    </div>
+                    
+                    <!-- Contact Support -->
+                    <div class="support-section p-3 bg-light rounded">
+                        <h6 class="mb-3">Need immediate help?</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <a href="mailto:support@cgel.com" class="support-link">
+                                    <i class="fas fa-envelope"></i>
+                                    <span>Email Support</span>
+                                </a>
+                            </div>
+                            <div class="col-md-6">
+                                <a href="tel:+85212345678" class="support-link">
+                                    <i class="fas fa-phone"></i>
+                                    <span>Call Support</span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Technical Details (for development) -->
+            {% if debug %}
+            <div class="card mt-4 bg-dark text-white">
+                <div class="card-body">
+                    <h6 class="card-title">
+                        <i class="fas fa-bug me-2"></i>Technical Details
+                    </h6>
+                    <small class="text-muted">
+                        Error occurred at: {{ request.build_absolute_uri }}<br>
+                        Time: {% now "Y-m-d H:i:s" %}<br>
+                        User: {{ request.user|default:"Anonymous" }}
+                    </small>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+/* 500 Error Page Styles */
+body {
+    background: linear-gradient(135deg, #dc3545 0%, #fd7e14 100%);
+    background-attachment: fixed;
+    min-height: 100vh;
+}
+
+.navbar, footer {
+    display: none !important;
+}
+
+.error-container {
+    padding: 20px;
+}
+
+/* Error Card */
+.error-card {
+    border: none;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+    animation: shakeIn 0.8s ease-out;
+}
+
+/* Error Animation */
+.error-animation {
+    position: relative;
+    margin-bottom: 2rem;
+}
+
+.error-number {
+    font-size: 6rem;
+    font-weight: 900;
+    color: #dc3545;
+    text-shadow: 2px 2px 4px rgba(220, 53, 69, 0.3);
+    line-height: 1;
+    animation: pulse 2s ease-in-out infinite alternate;
+}
+
+.error-icon {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 2rem;
+    color: #fd7e14;
+    animation: shake 3s ease-in-out infinite;
+}
+
+/* Title */
+.error-title {
+    color: #333;
+    font-weight: 700;
+    font-size: 1.75rem;
+}
+
+/* Status Items */
+.status-updates {
+    margin: 2rem 0;
+}
+
+.status-item {
+    display: flex;
+    align-items: center;
+    text-align: left;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 12px;
+    border: 2px solid #e9ecef;
+    transition: all 0.3s ease;
+    height: 100%;
+}
+
+.status-item:hover {
+    border-color: #dc3545;
+    background: rgba(220, 53, 69, 0.05);
+}
+
+.status-item i {
+    font-size: 1.5rem;
+}
+
+.status-item h6 {
+    margin-bottom: 0.25rem;
+    font-weight: 600;
+}
+
+/* Support Links */
+.support-section {
+    border: 1px solid #dee2e6;
+}
+
+.support-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.75rem;
+    background: white;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    text-decoration: none;
+    color: #495057;
+    transition: all 0.3s ease;
+    margin-bottom: 0.5rem;
+}
+
+.support-link:hover {
+    border-color: #dc3545;
+    background: rgba(220, 53, 69, 0.1);
+    color: #dc3545;
+    transform: translateY(-2px);
+}
+
+.support-link i {
+    font-size: 1.2rem;
+    margin-right: 0.5rem;
+}
+
+/* Buttons */
+.btn-primary {
+    background: linear-gradient(135deg, #dc3545 0%, #fd7e14 100%);
+    border: none;
+    border-radius: 12px;
+    padding: 0.75rem 1.5rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: 0 8px 25px rgba(220, 53, 69, 0.3);
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 30px rgba(220, 53, 69, 0.4);
+    background: linear-gradient(135deg, #c82333 0%, #e8610e 100%);
+}
+
+.btn-outline-primary {
+    border: 2px solid #dc3545;
+    color: #dc3545;
+    border-radius: 12px;
+    padding: 0.75rem 1.5rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-outline-primary:hover {
+    background: #dc3545;
+    border-color: #dc3545;
+    transform: translateY(-2px);
+}
+
+/* Animations */
+@keyframes shakeIn {
+    0% {
+        opacity: 0;
+        transform: scale(0.3) rotate(-10deg);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1.05) rotate(5deg);
+    }
+    70% {
+        transform: scale(0.95) rotate(-2deg);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1) rotate(0deg);
+    }
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+    }
+    100% {
+        transform: scale(1.05);
+    }
+}
+
+@keyframes shake {
+    0%, 100% {
+        transform: translate(-50%, -50%) rotate(0deg);
+    }
+    10%, 30%, 50%, 70%, 90% {
+        transform: translate(-50%, -50%) rotate(-2deg);
+    }
+    20%, 40%, 60%, 80% {
+        transform: translate(-50%, -50%) rotate(2deg);
+    }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .error-number {
+        font-size: 4rem;
+    }
+    
+    .error-icon {
+        font-size: 1.5rem;
+    }
+    
+    .error-title {
+        font-size: 1.5rem;
+    }
+    
+    .status-item {
+        margin-bottom: 1rem;
+    }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-refresh functionality
+    let countdown = 30;
+    const tryAgainBtn = document.querySelector('.btn-primary');
+    const originalText = tryAgainBtn.innerHTML;
+    
+    function updateCountdown() {
+        if (countdown > 0) {
+            tryAgainBtn.innerHTML = `<i class="fas fa-redo me-2"></i>Try Again (${countdown}s)`;
+            countdown--;
+            setTimeout(updateCountdown, 1000);
+        } else {
+            tryAgainBtn.innerHTML = originalText;
+            // Auto-refresh
+            location.reload();
+        }
+    }
+    
+    // Start countdown after 5 seconds
+    setTimeout(updateCountdown, 5000);
+    
+    // Add visual feedback for status items
+    const statusItems = document.querySelectorAll('.status-item');
+    statusItems.forEach((item, index) => {
+        setTimeout(() => {
+            item.style.transform = 'scale(1.02)';
+            setTimeout(() => {
+                item.style.transform = 'scale(1)';
+            }, 200);
+        }, index * 500 + 1000);
+    });
+    
+    // Track error for analytics (placeholder)
+    if (typeof gtag !== 'undefined') {
+        gtag('event', 'exception', {
+            'description': '500_internal_server_error',
+            'fatal': false
+        });
+    }
+});
+</script>
+{% endblock %}

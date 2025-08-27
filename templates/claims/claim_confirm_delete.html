@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Delete Claim - {{ claim.claim_number }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="card-title mb-0">
+                        <i class="fas fa-exclamation-triangle"></i> 
+                        Confirm Deletion
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning" role="alert">
+                        <h5><i class="fas fa-warning"></i> Warning!</h5>
+                        <p class="mb-0">You are about to permanently delete this expense claim. This action cannot be undone.</p>
+                    </div>
+
+                    <h5>Claim Details:</h5>
+                    <div class="bg-light p-3 rounded mb-3">
+                        <div class="row">
+                            <div class="col-sm-4"><strong>Claim Number:</strong></div>
+                            <div class="col-sm-8">{{ claim.claim_number }}</div>
+                        </div>
+                        <div class="row">
+                            <div class="col-sm-4"><strong>Event/Purpose:</strong></div>
+                            <div class="col-sm-8">{{ claim.event_name|default:"No description provided" }}</div>
+                        </div>
+                        <div class="row">
+                            <div class="col-sm-4"><strong>Company:</strong></div>
+                            <div class="col-sm-8">{{ claim.company.name }}</div>
+                        </div>
+                        <div class="row">
+                            <div class="col-sm-4"><strong>Period:</strong></div>
+                            <div class="col-sm-8">{{ claim.period_from|date:"M d, Y" }} - {{ claim.period_to|date:"M d, Y" }}</div>
+                        </div>
+                        <div class="row">
+                            <div class="col-sm-4"><strong>Items Count:</strong></div>
+                            <div class="col-sm-8">{{ claim.expense_items.count }} item{{ claim.expense_items.count|pluralize }}</div>
+                        </div>
+                        <div class="row">
+                            <div class="col-sm-4"><strong>Status:</strong></div>
+                            <div class="col-sm-8">
+                                <span class="badge bg-secondary">
+                                    <i class="fas fa-edit"></i> {{ claim.get_status_display }}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-sm-4"><strong>Created:</strong></div>
+                            <div class="col-sm-8">{{ claim.created_at|date:"M d, Y H:i" }}</div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'claims:claim_detail' claim.pk %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Cancel
+                        </a>
+                        
+                        <form method="post" style="display: inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-trash"></i> Delete Claim
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Add confirmation on form submit
+document.addEventListener('DOMContentLoaded', function() {
+    const deleteForm = document.querySelector('form[method="post"]');
+    if (deleteForm) {
+        deleteForm.addEventListener('submit', function(e) {
+            const confirmed = confirm(`Are you sure you want to delete claim {{ claim.claim_number }}? This action cannot be undone.`);
+            if (!confirmed) {
+                e.preventDefault();
+            }
+        });
+    }
+});
+</script>
+{% endblock %}
