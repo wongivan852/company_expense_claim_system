@@ -1,3 +1,4 @@
+{% load print_filters %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -130,6 +131,36 @@
             font-weight: bold;
             margin-bottom: 5px;
         }
+
+        /* Receipt references section */
+        .receipt-references {
+            margin-top: 30px;
+            border-top: 1px solid #ccc;
+            padding-top: 15px;
+        }
+
+        .receipt-references-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            font-size: 12px;
+        }
+
+        .receipt-refs-row {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            gap: 20px;
+            font-size: 10px;
+        }
+
+        .receipt-ref-item {
+            text-align: center;
+            flex: 1;
+            border: 1px dashed #999;
+            padding: 8px;
+            min-height: 30px;
+            background-color: #f9f9f9;
+        }
         
         /* Print controls */
         .print-controls {
@@ -181,8 +212,8 @@
         <button onclick="window.print()" class="btn btn-primary">
             <i class="fas fa-print"></i> Print
         </button>
-        <button onclick="window.close()" class="btn btn-secondary">
-            <i class="fas fa-times"></i> Close
+        <button onclick="history.back()" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Back
         </button>
     </div>
 
@@ -216,25 +247,18 @@
                         <th rowspan="2" class="date-col">Date</th>
                         <th rowspan="2" class="desc-col">Description</th>
                         <th rowspan="2" class="currency-col">Original Currency</th>
-                        <!-- Category Headers - matching PDF structure -->
-                        <th class="category-cols category-header">主題演講</th>
-                        <th class="category-cols category-header">贊助嘉賓</th>
-                        <th class="category-cols category-header">課程運營推廣</th>
-                        <th class="category-cols category-header">展覽采購</th>
-                        <th class="category-cols category-header">其他雜項</th>
-                        <th class="category-cols category-header">業務商談</th>
-                        <th class="category-cols category-header">交通</th>
+                        <!-- Dynamic Category Headers - only present categories -->
+                        {% for category in claim_data.present_categories %}
+                        <th class="category-cols category-header">{{ category.zh_label }}</th>
+                        {% endfor %}
                         <th rowspan="2" class="exchange-col">Exchange</th>
                         <th rowspan="2" class="total-col">Total(HK)</th>
                     </tr>
                     <tr>
-                        <th class="category-cols">講師</th>
-                        <th class="category-cols">雜項</th>
-                        <th class="category-cols">采購</th>
-                        <th class="category-cols">雜項</th>
-                        <th class="category-cols">采購</th>
-                        <th class="category-cols">雜項</th>
-                        <th class="category-cols">雜項</th>
+                        <!-- Second row for English category labels -->
+                        {% for category in claim_data.present_categories %}
+                        <th class="category-cols">{{ category.en_label }}</th>
+                        {% endfor %}
                     </tr>
                 </thead>
                 <tbody>
@@ -244,6 +268,7 @@
                         <td class="date-col">{{ item.expense_date|date:"M d" }}</td>
                         <td class="desc-col">
                             {{ item.description }}
+                            <br><small><strong>Ref:</strong> {{ claim_data.claim.claim_number }}</small>
                             {% if item.description_chinese %}
                             <br><em>{{ item.description_chinese }}</em>
                             {% endif %}
@@ -260,73 +285,14 @@
                         </td>
                         <td class="currency-col">{{ item.currency.code }}</td>
                         
-                        <!-- Category Amount Columns -->
-                        {% if item.category.code == "keynote_speech" %}
-                        <td class="amount-cell category-cols">{{ item.amount_hkd|floatformat:2 }}</td>
-                        <td class="category-cols"></td>
-                        <td class="category-cols"></td>
-                        <td class="category-cols"></td>
-                        <td class="category-cols"></td>
-                        <td class="category-cols"></td>
-                        <td class="category-cols"></td>
-                        {% elif item.category.code == "sponsor_guest" %}
-                        <td class="category-cols"></td>
-                        <td class="amount-cell category-cols">{{ item.amount_hkd|floatformat:2 }}</td>
-                        <td class="category-cols"></td>
-                        <td class="category-cols"></td>
-                        <td class="category-cols"></td>
-                        <td class="category-cols"></td>
-                        <td class="category-cols"></td>
-                        {% elif item.category.code == "course_operations" %}
-                        <td class="category-cols"></td>
-                        <td class="category-cols"></td>
-                        <td class="amount-cell category-cols">{{ item.amount_hkd|floatformat:2 }}</td>
-                        <td class="category-cols"></td>
-                        <td class="category-cols"></td>
-                        <td class="category-cols"></td>
-                        <td class="category-cols"></td>
-                        {% elif item.category.code == "exhibition_procurement" %}
-                        <td class="category-cols"></td>
-                        <td class="category-cols"></td>
-                        <td class="category-cols"></td>
-                        <td class="amount-cell category-cols">{{ item.amount_hkd|floatformat:2 }}</td>
-                        <td class="category-cols"></td>
-                        <td class="category-cols"></td>
-                        <td class="category-cols"></td>
-                        {% elif item.category.code == "other_misc" %}
-                        <td class="category-cols"></td>
-                        <td class="category-cols"></td>
-                        <td class="category-cols"></td>
-                        <td class="category-cols"></td>
-                        <td class="amount-cell category-cols">{{ item.amount_hkd|floatformat:2 }}</td>
-                        <td class="category-cols"></td>
-                        <td class="category-cols"></td>
-                        {% elif item.category.code == "business_negotiation" %}
-                        <td class="category-cols"></td>
-                        <td class="category-cols"></td>
-                        <td class="category-cols"></td>
-                        <td class="category-cols"></td>
-                        <td class="category-cols"></td>
-                        <td class="amount-cell category-cols">{{ item.amount_hkd|floatformat:2 }}</td>
-                        <td class="category-cols"></td>
-                        {% elif item.category.code == "transportation" %}
-                        <td class="category-cols"></td>
-                        <td class="category-cols"></td>
-                        <td class="category-cols"></td>
-                        <td class="category-cols"></td>
-                        <td class="category-cols"></td>
-                        <td class="category-cols"></td>
-                        <td class="amount-cell category-cols">{{ item.amount_hkd|floatformat:2 }}</td>
-                        {% else %}
-                        <!-- Default to other misc if category not matched -->
-                        <td class="category-cols"></td>
-                        <td class="category-cols"></td>
-                        <td class="category-cols"></td>
-                        <td class="category-cols"></td>
-                        <td class="amount-cell category-cols">{{ item.amount_hkd|floatformat:2 }}</td>
-                        <td class="category-cols"></td>
-                        <td class="category-cols"></td>
-                        {% endif %}
+                        <!-- Dynamic Category Amount Columns - only present categories -->
+                        {% for category in claim_data.present_categories %}
+                            {% if item.category.code == category.code %}
+                            <td class="amount-cell category-cols">{{ item.amount_hkd|floatformat:2 }}</td>
+                            {% else %}
+                            <td class="category-cols"></td>
+                            {% endif %}
+                        {% endfor %}
                         
                         <td class="amount-cell exchange-col">{{ item.exchange_rate|floatformat:2 }}</td>
                         <td class="amount-cell total-col">{{ item.amount_hkd|floatformat:2 }}</td>
@@ -336,13 +302,9 @@
                     <!-- Total Row -->
                     <tr class="total-row">
                         <td colspan="4"><strong>Total</strong></td>
-                        <td class="amount-cell">{{ claim_data.category_totals.keynote_speech|default_if_none:"0"|floatformat:2 }}</td>
-                        <td class="amount-cell">{{ claim_data.category_totals.sponsor_guest|default_if_none:"0"|floatformat:2 }}</td>
-                        <td class="amount-cell">{{ claim_data.category_totals.course_operations|default_if_none:"0"|floatformat:2 }}</td>
-                        <td class="amount-cell">{{ claim_data.category_totals.exhibition_procurement|default_if_none:"0"|floatformat:2 }}</td>
-                        <td class="amount-cell">{{ claim_data.category_totals.other_misc|default_if_none:"0"|floatformat:2 }}</td>
-                        <td class="amount-cell">{{ claim_data.category_totals.business_negotiation|default_if_none:"0"|floatformat:2 }}</td>
-                        <td class="amount-cell">{{ claim_data.category_totals.transportation|default_if_none:"0"|floatformat:2 }}</td>
+                        {% for category in claim_data.present_categories %}
+                        <td class="amount-cell">{{ claim_data.category_totals|get_item:category.code|floatformat:2 }}</td>
+                        {% endfor %}
                         <td></td>
                         <td class="amount-cell"><strong>{{ claim_data.total_hkd|floatformat:2 }}</strong></td>
                     </tr>
@@ -366,10 +328,20 @@
                     {% endif %}
                 </div>
             </div>
+
+            <!-- Receipt References Section for Physical Attachment -->
+            <div class="receipt-references">
+                <div class="receipt-references-title">Physical Receipt References (for manual attachment):</div>
+                <div class="receipt-refs-row">
+                    <div class="receipt-ref-item">
+                        <strong>{{ claim_data.claim.claim_number }}</strong>
+                        <br><small>Claim Ref</small>
+                    </div>
+                </div>
+            </div>
             
             <!-- Claim Information Footer -->
             <div style="margin-top: 20px; font-size: 10px; color: #666;">
-                <div><strong>Claim Number:</strong> {{ claim_data.claim.claim_number }}</div>
                 <div><strong>Status:</strong> {{ claim_data.claim.get_status_display }}</div>
                 <div><strong>Created:</strong> {{ claim_data.claim.created_at|date:"F d, Y g:i A" }}</div>
                 {% if claim_data.claim.submitted_at %}

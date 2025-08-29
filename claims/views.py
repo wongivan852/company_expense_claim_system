@@ -562,8 +562,22 @@ def claim_edit_view(request, pk):
                                 expense_item.exchange_rate = Decimal('1.0')
                                 expense_item.amount_hkd = expense_item.original_amount
                         
-                        # Let the model handle item_number assignment automatically
-                        # No manual assignment needed - the save() method handles this
+                        # Set required fields for new items
+                        if not expense_item.pk:
+                            # For new items, find next available item number to avoid conflicts
+                            existing_numbers = set(claim.expense_items.exclude(pk=expense_item.pk).values_list('item_number', flat=True))
+                            # Also check numbers that might be assigned to items we're processing in this request
+                            for processed_id in processed_item_ids:
+                                try:
+                                    existing_item = ExpenseItem.objects.get(pk=processed_id)
+                                    existing_numbers.add(existing_item.item_number)
+                                except ExpenseItem.DoesNotExist:
+                                    pass
+                            
+                            next_number = 1
+                            while next_number in existing_numbers:
+                                next_number += 1
+                            expense_item.item_number = next_number
                         
                         # Handle category
                         category_id = item_data.get('category')
@@ -741,178 +755,3 @@ def reject_claim_view(request, pk):
         return redirect('claims:claim_detail', pk=pk)
     
     return render(request, 'claims/reject_claim.html', {'claim': claim})
-
-
-@login_required
-def print_claims_view(request):
-    """Print view for selected claims matching PDF format."""
-    claim_ids = request.GET.get('ids', '').split(',')
-    
-    if not claim_ids or claim_ids == ['']:
-        messages.error(request, 'No claims selected for printing.')
-        return redirect('claims:claim_list')
-    
-    try:
-        # Convert string IDs to integers and filter out invalid ones
-        claim_ids = [int(id.strip()) for id in claim_ids if id.strip().isdigit()]
-    except ValueError:
-        messages.error(request, 'Invalid claim IDs provided.')
-        return redirect('claims:claim_list')
-    
-    # Get claims with all required data for printing
-    claims = ExpenseClaim.objects.select_related(
-        'claimant', 'company', 'approved_by', 'checked_by'
-    ).prefetch_related(
-        'expense_items__category',
-        'expense_items__currency'
-    ).filter(
-        pk__in=claim_ids
-    ).order_by('claim_number')
-    
-    # Check permissions - users can only print their own claims unless they have special permissions
-    user = request.user
-    if not user.has_perm('claims.can_view_all_claims'):
-        claims = claims.filter(claimant=user)
-    
-    if not claims:
-        messages.error(request, 'No valid claims found or you do not have permission to print these claims.')
-        return redirect('claims:claim_list')
-    
-    # Combine all selected claims into a single expense sheet format
-    # This creates ONE sheet with all expense items from multiple claims combined
-    
-    # Collect all expense items from all selected claims
-    all_expense_items = []
-    combined_category_totals = {}
-    combined_total_hkd = Decimal('0.00')
-    
-    # Get the primary claim info (use first claim for header info)
-    primary_claim = claims.first()
-    
-    # Determine combined period (min start date to max end date)
-    period_from = min(claim.period_from for claim in claims)
-    period_to = max(claim.period_to for claim in claims)
-    
-    # Get all companies involved
-    companies = set(claim.company for claim in claims)
-    primary_company = primary_claim.company
-    
-    # Process all claims and combine their expense items
-    item_counter = 1
-    for claim in claims:
-        expense_items = claim.expense_items.all().order_by('item_number')
-        
-        for original_item in expense_items:
-            # Create a combined item entry
-            combined_item = {
-                'item_number': item_counter,
-                'expense_date': original_item.expense_date,
-                'description': original_item.description,
-                'description_chinese': original_item.description_chinese,
-                'category': original_item.category,
-                'original_amount': original_item.original_amount,
-                'currency': original_item.currency,
-                'exchange_rate': original_item.exchange_rate,
-                'amount_hkd': original_item.amount_hkd,
-                'has_receipt': original_item.has_receipt,
-                'receipt_notes': original_item.receipt_notes,
-                'participants': original_item.participants,
-                'claim_number': claim.claim_number,  # Track which claim this item came from
-            }
-            
-            all_expense_items.append(combined_item)
-            
-            # Add to category totals
-            cat_code = original_item.category.code
-            if cat_code not in combined_category_totals:
-                combined_category_totals[cat_code] = Decimal('0.00')
-            combined_category_totals[cat_code] += original_item.amount_hkd
-            
-            # Add to grand total
-            combined_total_hkd += original_item.amount_hkd
-            
-            item_counter += 1
-    
-    # Sort all items by date, then by original claim order
-    all_expense_items.sort(key=lambda x: (x['expense_date'], x['item_number']))
-    
-    # Re-number items sequentially
-    for i, item in enumerate(all_expense_items, 1):
-        item['item_number'] = i
-    
-    # Create combined claims info for display
-    claim_numbers = ', '.join([claim.claim_number for claim in claims])
-    claimant_name = primary_claim.claimant.get_full_name()
-    
-    # If multiple companies, mention that
-    if len(companies) > 1:
-        company_info = f"{primary_company.name} (and {len(companies)-1} other companies)"
-    else:
-        company_info = primary_company.name
-    
-    # Create event name that includes all claims
-    if len(claims) == 1:
-        event_name = primary_claim.event_name or "Expense Claim"
-    else:
-        event_name = f"Combined Expense Claims ({len(claims)} claims)"
-    
-    # Find first checked/approved claim for approval info
-    checked_by = None
-    checked_at = None
-    approved_by = None
-    approved_at = None
-    
-    for claim in claims:
-        if claim.checked_by and not checked_by:
-            checked_by = claim.checked_by
-            checked_at = claim.checked_at
-        if claim.approved_by and not approved_by:
-            approved_by = claim.approved_by
-            approved_at = claim.approved_at
-    
-    # Determine which categories have amounts (for dynamic column display)
-    # Map actual categories in database to PDF format categories
-    category_display_info = []
-    
-    # Get all actual categories from the expense items and their amounts
-    for cat_code, amount in combined_category_totals.items():
-        if amount > 0:
-            # Find the first item with this category to get category info
-            category_obj = None
-            for item in all_expense_items:
-                if item['category'].code == cat_code:
-                    category_obj = item['category']
-                    break
-            
-            if category_obj:
-                category_display_info.append({
-                    'code': cat_code,
-                    'en_label': category_obj.name,
-                    'zh_label': category_obj.name_chinese or category_obj.name,
-                    'amount': amount
-                })
-    
-    # Prepare combined data structure
-    combined_data = {
-        'claim_numbers': claim_numbers,
-        'claimant_name': claimant_name,
-        'company_info': company_info,
-        'event_name': event_name,
-        'period_from': period_from,
-        'period_to': period_to,
-        'expense_items': all_expense_items,
-        'category_totals': combined_category_totals,
-        'total_hkd': combined_total_hkd,
-        'claims_count': len(claims),
-        'original_claims': claims,  # Keep reference to original claims for approval info
-        'checked_by': checked_by,
-        'checked_at': checked_at,
-        'approved_by': approved_by,
-        'approved_at': approved_at,
-        'category_display_info': category_display_info,  # Dynamic categories to show
-    }
-    
-    return render(request, 'claims/print_combined_claims.html', {
-        'combined_data': combined_data,
-        'print_date': timezone.now(),
-    })

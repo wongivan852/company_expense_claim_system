@@ -516,40 +516,6 @@ class ExpenseClaim(models.Model):
         self.total_amount_original = sum(item.original_amount for item in items)
         self.total_amount_hkd = sum(item.amount_hkd for item in items)
         self.save(update_fields=['total_amount_original', 'total_amount_hkd'])
-    
-    @property
-    def total_amount(self):
-        """Get total amount in HKD for display."""
-        return self.total_amount_hkd
-    
-    @property
-    def primary_currency(self):
-        """Get primary currency code."""
-        return 'HKD'  # All totals are converted to HKD
-    
-    def add_expense_item(self, **item_data):
-        """Safely add an expense item with proper item number assignment."""
-        from django.db import transaction
-        
-        with transaction.atomic():
-            # Lock the claim to prevent concurrent modifications
-            claim = ExpenseClaim.objects.select_for_update().get(pk=self.pk)
-            
-            # Get the next item number
-            last_item = ExpenseItem.objects.filter(
-                expense_claim=claim
-            ).order_by('-item_number').first()
-            
-            next_item_number = (last_item.item_number + 1) if last_item else 1
-            
-            # Create the expense item
-            item_data['expense_claim'] = claim
-            item_data['item_number'] = next_item_number
-            
-            expense_item = ExpenseItem(**item_data)
-            expense_item.save()
-            
-            return expense_item
 
 
 class ExpenseItem(models.Model):
@@ -669,39 +635,16 @@ class ExpenseItem(models.Model):
         
         # Auto-assign item number if not provided
         if not self.item_number:
-            from django.db import transaction
-            try:
-                with transaction.atomic():
-                    # Use select_for_update to prevent race conditions
-                    claim = ExpenseClaim.objects.select_for_update().get(pk=self.expense_claim.pk)
-                    existing_items = ExpenseItem.objects.filter(
-                        expense_claim=claim
-                    ).order_by('-item_number')
-                    
-                    last_item = existing_items.first()
-                    self.item_number = (last_item.item_number + 1) if last_item else 1
-            except Exception as e:
-                # If there's still a race condition, try a few times with incremental numbers
-                for attempt in range(1, 10):  # Try up to item number 10
-                    try:
-                        if not ExpenseItem.objects.filter(
-                            expense_claim=self.expense_claim, 
-                            item_number=attempt
-                        ).exists():
-                            self.item_number = attempt
-                            break
-                    except Exception:
-                        continue
-                else:
-                    # If all else fails, use a timestamp-based approach
-                    import time
-                    self.item_number = int(str(int(time.time() * 1000))[-4:])
+            last_item = ExpenseItem.objects.filter(
+                expense_claim=self.expense_claim
+            ).order_by('-item_number').first()
+            
+            self.item_number = (last_item.item_number + 1) if last_item else 1
         
         super().save(*args, **kwargs)
         
-        # Update claim totals (but avoid infinite recursion during bulk operations)
-        if not getattr(self, '_skip_total_update', False):
-            self.expense_claim.update_totals()
+        # Update claim totals
+        self.expense_claim.update_totals()
 
 
 class ClaimComment(models.Model):

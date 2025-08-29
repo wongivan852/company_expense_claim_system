@@ -1,3 +1,4 @@
+{% load print_filters %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,8 +7,10 @@
     <title>Combined Expense Claims - {{ combined_data.claim_numbers }}</title>
     <style>
         /* Print-specific styles */
-        @media print {
-            @page {
+        @media p            </tbody>
+        </table>
+        
+        <!-- Approval Section -->        @page {
                 margin: 0.5in;
                 size: A4;
             }
@@ -136,6 +139,38 @@
             font-weight: bold;
             margin-bottom: 5px;
         }
+
+        /* Receipt references section */
+        .receipt-references {
+            margin-top: 30px;
+            border-top: 1px solid #ccc;
+            padding-top: 15px;
+        }
+
+        .receipt-references-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            font-size: 12px;
+        }
+
+        .receipt-refs-row {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            gap: 10px;
+            font-size: 10px;
+            flex-wrap: wrap;
+        }
+
+        .receipt-ref-item {
+            text-align: center;
+            flex: 1;
+            border: 1px dashed #999;
+            padding: 8px;
+            min-height: 30px;
+            background-color: #f9f9f9;
+            min-width: 100px;
+        }
         
         /* Print controls */
         .print-controls {
@@ -200,8 +235,8 @@
         <button onclick="window.print()" class="btn btn-primary">
             <i class="fas fa-print"></i> Print
         </button>
-        <button onclick="window.close()" class="btn btn-secondary">
-            <i class="fas fa-times"></i> Close
+        <button onclick="history.back()" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Back
         </button>
     </div>
 
@@ -237,8 +272,8 @@
                     <th rowspan="2" class="date-col">Date</th>
                     <th rowspan="2" class="desc-col">Description</th>
                     <th rowspan="2" class="currency-col">Original Currency</th>
-                    <!-- Dynamic Category Headers - matching PDF structure with Chinese labels -->
-                    {% for category in combined_data.category_display_info %}
+                    <!-- Dynamic Category Headers - only present categories -->
+                    {% for category in combined_data.present_categories %}
                     <th class="category-cols category-header">{{ category.zh_label }}</th>
                     {% endfor %}
                     <th rowspan="2" class="exchange-col">Exchange</th>
@@ -246,18 +281,19 @@
                 </tr>
                 <tr>
                     <!-- Second row for English category labels -->
-                    {% for category in combined_data.category_display_info %}
-                    <th class="category-cols" style="font-size: 7px; text-align: center;">{{ category.en_label|slice:":8" }}</th>
+                    {% for category in combined_data.present_categories %}
+                    <th class="category-cols">{{ category.en_label }}</th>
                     {% endfor %}
                 </tr>
             </thead>
             <tbody>
                 {% for item in combined_data.expense_items %}
                 <tr>
-                    <td class="item-col">{{ item.item_number }}</td>
+                    <td class="item-col">{{ item.combined_item_number }}</td>
                     <td class="date-col">{{ item.expense_date|date:"M d" }}</td>
                     <td class="desc-col">
                         {{ item.description }}
+                        <br><small><strong>Ref:</strong> {{ item.claim_reference }}</small>
                         {% if item.description_chinese %}
                         <br><em>{{ item.description_chinese }}</em>
                         {% endif %}
@@ -271,49 +307,41 @@
                         <br><span class="receipt-note">{{ item.receipt_notes }}</span>
                         {% endif %}
                         {% endif %}
-                        <!-- Show which claim this item came from -->
-                        <br><small style="color: #6c757d;">[{{ item.claim_number }}]</small>
                     </td>
-                    <td class="currency-col">
-                        {{ item.currency.code }}<br>{{ item.original_amount|floatformat:0 }}
-                    </td>
+                    <td class="currency-col">{{ item.currency.code }}</td>
                     
-                    <!-- Dynamic Category Amount Columns - only show categories with amounts -->
-                    {% for category in combined_data.category_display_info %}
+                    <!-- Dynamic Category Amount Columns - only present categories -->
+                    {% for category in combined_data.present_categories %}
                         {% if item.category.code == category.code %}
-                            <td class="amount-cell category-cols">{{ item.amount_hkd|floatformat:2 }}</td>
+                        <td class="amount-cell category-cols">{{ item.amount_hkd|floatformat:2 }}</td>
                         {% else %}
-                            <td class="category-cols"></td>
+                        <td class="category-cols"></td>
                         {% endif %}
                     {% endfor %}
                     
-                    <td class="amount-cell exchange-col">
-                        {% if item.exchange_rate == 1 %}
-                            1
-                        {% else %}
-                            {{ item.exchange_rate|floatformat:3 }}
-                        {% endif %}
-                    </td>
+                    <td class="amount-cell exchange-col">{{ item.exchange_rate|floatformat:2 }}</td>
                     <td class="amount-cell total-col">{{ item.amount_hkd|floatformat:2 }}</td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="{{ combined_data.category_display_info|length|add:6 }}" class="text-center">No expense items found.</td>
                 </tr>
                 {% endfor %}
                 
                 <!-- Total Row -->
                 <tr class="total-row">
-                    <td colspan="4"><strong>Total</strong></td>
-                    <!-- Dynamic category totals - only show categories with amounts -->
-                    {% for category in combined_data.category_display_info %}
-                        <td class="amount-cell">{{ category.amount|floatformat:2 }}</td>
+                    <td colspan="4"><strong>Combined Total</strong></td>
+                    {% for category in combined_data.present_categories %}
+                    <td class="amount-cell">{{ combined_data.category_totals|get_item:category.code|floatformat:2 }}</td>
                     {% endfor %}
                     <td></td>
                     <td class="amount-cell"><strong>{{ combined_data.total_hkd|floatformat:2 }}</strong></td>
                 </tr>
             </tbody>
         </table>
+        
+        <!-- Combined Claims Information Summary -->
+        <div style="margin-top: 20px; font-size: 10px; color: #666;">
+            <div><strong>Total Combined Amount:</strong> {{ combined_data.total_hkd|floatformat:2 }} HKD</div>
+            <div><strong>Period Coverage:</strong> {{ combined_data.period_from|date:"F d, Y" }} to {{ combined_data.period_to|date:"F d, Y" }}</div>
+            <div><strong>Generated:</strong> {% now "F d, Y g:i A" %}</div>
+        </div>
         
         <!-- Approval Section -->
         <div class="approval-section">
@@ -334,13 +362,18 @@
                 {% endif %}
             </div>
         </div>
-        
-        <!-- Combined Claims Information Footer -->
-        <div style="margin-top: 20px; font-size: 10px; color: #666;">
-            <div><strong>Combined Claim Numbers:</strong> {{ combined_data.claim_numbers }}</div>
-            <div><strong>Generated:</strong> {{ print_date|date:"F d, Y g:i A" }}</div>
-            <div><strong>Total Combined Amount:</strong> {{ combined_data.total_hkd|floatformat:2 }} HKD</div>
-            <div><strong>Period Coverage:</strong> {{ combined_data.period_from|date:"F d, Y" }} to {{ combined_data.period_to|date:"F d, Y" }}</div>
+
+        <!-- Receipt References Section for Physical Attachment -->
+        <div class="receipt-references">
+            <div class="receipt-references-title">Physical Receipt References (for manual attachment):</div>
+            <div class="receipt-refs-row">
+                {% for claim in combined_data.claims %}
+                <div class="receipt-ref-item">
+                    <strong>{{ claim.claim_number }}</strong>
+                    <br><small>Claim Ref</small>
+                </div>
+                {% endfor %}
+            </div>
         </div>
     </div>
 

@@ -29,8 +29,11 @@
                     <h6 class="m-0 font-weight-bold text-primary">
                         <i class="fas fa-info-circle me-2"></i>Claim Details
                     </h6>
-                    {% if claim.claimant == request.user and claim.status == 'draft' %}
                     <div class="btn-group" role="group">
+                        <a href="{% url 'claims:print_claim' claim.id %}" class="btn btn-outline-secondary btn-sm" target="_blank">
+                            <i class="fas fa-print me-2"></i>Print
+                        </a>
+                        {% if claim.claimant == request.user and claim.status == 'draft' %}
                         <a href="{% url 'claims:claim_edit' claim.id %}" class="btn btn-primary btn-sm">
                             <i class="fas fa-edit me-2"></i>Edit Claim
                         </a>
@@ -39,8 +42,8 @@
                             <i class="fas fa-trash me-2"></i>Delete Draft
                         </a>
                         {% endif %}
+                        {% endif %}
                     </div>
-                    {% endif %}
                 </div>
                 <div class="card-body">
                     <div class="row">

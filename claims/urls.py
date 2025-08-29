@@ -4,7 +4,7 @@ URL patterns for expense claims app.
 
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from . import views, simple_views, enhanced_views
+from . import views, simple_views, enhanced_views, print_views
 
 # API router  
 router = DefaultRouter()
@@ -20,13 +20,15 @@ urlpatterns = [
     path('<int:pk>/edit/', views.claim_edit_view, name='claim_edit'),
     path('<int:pk>/delete/', views.claim_delete_view, name='claim_delete'),
     
+    # Print functionality
+    path('print/select/', print_views.select_claims_for_print_view, name='select_claims_print'),
+    path('print/combined/', print_views.print_combined_claims_view, name='print_combined_claims'),
+    path('<int:pk>/print/', print_views.print_claim_view, name='print_claim'),
+    
     # Approval workflows
     path('pending/', views.pending_approvals_view, name='pending_approvals'),
     path('<int:pk>/approve/', views.approve_claim_view, name='approve_claim'),
     path('<int:pk>/reject/', views.reject_claim_view, name='reject_claim'),
-    
-    # Print functionality
-    path('print/', views.print_claims_view, name='print_claims'),
     
     # Test views (no auth required) 
     path('test/', simple_views.test_dashboard, name='test_dashboard'),
