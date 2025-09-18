@@ -30,9 +30,19 @@
                         <i class="fas fa-info-circle me-2"></i>Claim Details
                     </h6>
                     <div class="btn-group" role="group">
-                        <a href="{% url 'claims:print_claim' claim.id %}" class="btn btn-outline-secondary btn-sm" target="_blank">
-                            <i class="fas fa-print me-2"></i>Print
-                        </a>
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown">
+                                <i class="fas fa-print me-2"></i>Print Options
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="{% url 'claims:print_claim' claim.id %}" target="_blank">
+                                    <i class="fas fa-file-text me-2"></i>Summary Only
+                                </a></li>
+                                <li><a class="dropdown-item" href="{% url 'claims:print_claim_receipts' claim.id %}" target="_blank">
+                                    <i class="fas fa-images me-2"></i>With Receipt Images
+                                </a></li>
+                            </ul>
+                        </div>
                         {% if claim.claimant == request.user and claim.status == 'draft' %}
                         <a href="{% url 'claims:claim_edit' claim.id %}" class="btn btn-primary btn-sm">
                             <i class="fas fa-edit me-2"></i>Edit Claim
@@ -115,10 +125,10 @@
                                     <td>
                                         {% if item.documents.exists %}
                                         <a href="{{ item.documents.first.file.url }}" target="_blank" class="btn btn-outline-primary btn-sm">
-                                            <i class="fas fa-file-alt me-1"></i>View
+                                            <i class="fas fa-paperclip me-1"></i>View Attachment
                                         </a>
                                         {% else %}
-                                        <span class="text-muted">No receipt</span>
+                                        <span class="text-muted"><i class="fas fa-times-circle"></i> No attachment</span>
                                         {% endif %}
                                     </td>
                                 </tr>

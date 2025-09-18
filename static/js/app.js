@@ -442,13 +442,17 @@
     }
 
     function formatCurrency(amountField) {
-        let value = amountField.value.replace(/[^\d.-]/g, '');
-        const numValue = parseFloat(value);
+        // DISABLED: This function was causing cursor jumping
+        // Never modify input values during user typing
+        // let value = amountField.value.replace(/[^\d.-]/g, '');
+        // const numValue = parseFloat(value);
+        // 
+        // if (!isNaN(numValue) && numValue >= 0) {
+        //     // Format with 2 decimal places
+        //     amountField.value = numValue.toFixed(2);
+        // }
         
-        if (!isNaN(numValue) && numValue >= 0) {
-            // Format with 2 decimal places
-            amountField.value = numValue.toFixed(2);
-        }
+        console.log('formatCurrency called but disabled to prevent cursor jumping');
     }
 
     // Utility functions

@@ -6,17 +6,30 @@
 
 {% block extra_css %}
 <style>
+.decimal-input-safe {
+    font-family: 'Courier New', monospace;
+    text-align: right;
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: #2c3e50;
+    background-color: #f0fff0 !important;
+    border: 2px solid #28a745 !important;
+}
+
+.decimal-input-safe::placeholder {
+    color: #bdc3c7;
+    font-style: italic;
+}
+
+/* Keep old class for any remaining references */
 .amount-field {
     font-family: 'Courier New', monospace;
     text-align: right;
     font-weight: 600;
     font-size: 1.1rem;
     color: #2c3e50;
-}
-
-.amount-field::placeholder {
-    color: #bdc3c7;
-    font-style: italic;
+    background-color: #fff3cd !important;
+    border: 2px solid #ffc107 !important;
 }
 
 .amount-feedback {
@@ -294,21 +307,23 @@
                                     </div>
                                     <div class="col-md-3">
                                         <div class="mb-3">
-                                            <label class="form-label">Amount <span class="text-danger">*</span></label>
+                                            <label class="form-label">💰 Amount (Fixed) <span class="text-danger">*</span></label>
                                             <div class="input-group">
                                                 <span class="input-group-text currency-symbol">{{ item.currency.symbol }}</span>
                                                 <input type="text" name="expense_items[{{ forloop.counter0 }}][amount]" 
-                                                       class="form-control amount-field" 
+                                                       class="form-control decimal-input-safe" 
                                                        required
                                                        value="{{ item.original_amount }}"
                                                        placeholder="0.00"
+                                                       pattern="[0-9]+(\.[0-9]{1,2})?"
+                                                       inputmode="decimal"
                                                        data-original-amount="{{ item.original_amount }}"
                                                        title="Enter amount (e.g., 123.45)"
                                                        autocomplete="off">
                                             </div>
                                             <div class="form-text">
-                                                <i class="fas fa-info-circle text-primary"></i>
-                                                Type numbers only, decimals auto-format
+                                                <i class="fas fa-info-circle text-success"></i>
+                                                🎯 FIXED: Enter amount (e.g., 123.45) - No more jumping cursor!
                                             </div>
                                         </div>
                                     </div>
@@ -345,8 +360,13 @@
                                             {% if item.documents.exists %}
                                             <div class="mb-2">
                                                 <a href="{{ item.documents.first.file.url }}" target="_blank" class="btn btn-sm btn-outline-info">
-                                                    <i class="fas fa-eye"></i> View Current Receipt
+                                                    <i class="fas fa-paperclip"></i> View Attached Receipt
                                                 </a>
+                                                <span class="text-success ms-2"><i class="fas fa-check-circle"></i> Receipt attached</span>
+                                            </div>
+                                            {% else %}
+                                            <div class="mb-2">
+                                                <span class="text-muted"><i class="fas fa-times-circle"></i> No attachment</span>
                                             </div>
                                             {% endif %}
                                             <input type="file" name="expense_items[{{ forloop.counter0 }}][receipt]" 
@@ -417,20 +437,22 @@
                                     </div>
                                     <div class="col-md-3">
                                         <div class="mb-3">
-                                            <label class="form-label">Amount <span class="text-danger">*</span></label>
+                                            <label class="form-label">💰 Amount (Fixed) <span class="text-danger">*</span></label>
                                             <div class="input-group">
                                                 <span class="input-group-text currency-symbol">$</span>
                                                 <input type="text" name="expense_items[0][amount]" 
-                                                       class="form-control amount-field" 
+                                                       class="form-control decimal-input-safe" 
                                                        required
                                                        placeholder="0.00"
+                                                       pattern="[0-9]+(\.[0-9]{1,2})?"
+                                                       inputmode="decimal"
                                                        data-original-amount=""
                                                        title="Enter amount (e.g., 123.45)"
                                                        autocomplete="off">
                                             </div>
                                             <div class="form-text">
-                                                <i class="fas fa-info-circle text-primary"></i>
-                                                Type numbers only, decimals auto-format
+                                                <i class="fas fa-info-circle text-success"></i>
+                                                🎯 FIXED: Enter amount (e.g., 123.45) - No more jumping cursor!
                                             </div>
                                         </div>
                                     </div>
@@ -612,9 +634,11 @@
                     <div class="input-group">
                         <span class="input-group-text currency-symbol">$</span>
                         <input type="text" name="expense_items[INDEX][amount]" 
-                               class="form-control amount-field" 
+                               class="form-control decimal-input-safe" 
                                required
                                placeholder="0.00"
+                               pattern="[0-9]+(\.[0-9]{1,2})?"
+                               inputmode="decimal"
                                data-original-amount=""
                                title="Enter amount (e.g., 123.45)"
                                autocomplete="off">
@@ -673,6 +697,7 @@
 {% endblock %}
 
 {% block extra_js %}
+<!-- CLEAN SOLUTION: Minimal JS without input value manipulation -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     let itemCounter = 1;
@@ -715,6 +740,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Simplified amount input handling - minimal interference during typing
     document.addEventListener('input', function(e) {
+        // Only process exchange rate inputs, NOT the new decimal-input-safe fields
+        if (e.target.classList.contains('exchange-rate-input')) {
+            const expenseItem = e.target.closest('.expense-item');
+            if (expenseItem) {
+                updateHKDEquivalent(expenseItem);
+                updateTotals();
+            }
+        }
+        // OLD amount-field class still processed for any remaining fields
         if (e.target.classList.contains('amount-field')) {
             // Only update HKD equivalent, don't modify the input value during typing
             const expenseItem = e.target.closest('.expense-item');
@@ -732,13 +766,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         if (e.target.classList.contains('exchange-rate-input')) {
             formatExchangeRateInput(e.target);
-        }
-    });
-    
-    // Clear formatting on focus for easier editing
-    document.addEventListener('focus', function(e) {
-        if (e.target.classList.contains('amount-field')) {
-            clearAmountFormatting(e.target);
         }
     });
 
@@ -820,14 +847,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Real-time calculation updates for exchange rates
-    document.addEventListener('input', function(e) {
-        if (e.target.classList.contains('exchange-rate-input')) {
-            updateHKDEquivalent(e.target.closest('.expense-item'));
-            updateTotals();
-        }
-    });
-
     function formatExchangeRateInput(input) {
         let value = parseFloat(input.value);
         if (value && !isNaN(value)) {
@@ -878,9 +897,14 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function updateHKDEquivalent(expenseItem) {
-        const amountInput = expenseItem.querySelector('.amount-field');
+        if (!expenseItem) return;
+        
+        // Try both new and old amount input classes
+        const amountInput = expenseItem.querySelector('.decimal-input-safe') || expenseItem.querySelector('.amount-field');
         const exchangeRateInput = expenseItem.querySelector('.exchange-rate-input');
         const hkdEquivalentInput = expenseItem.querySelector('.hkd-equivalent');
+        
+        if (!amountInput || !exchangeRateInput || !hkdEquivalentInput) return;
         
         // Parse amount, removing any commas first
         const cleanValue = amountInput.value.replace(/,/g, '');
@@ -891,18 +915,27 @@ document.addEventListener('DOMContentLoaded', function() {
         hkdEquivalentInput.value = hkdAmount.toFixed(2);
     }
 
-    function showAmountFeedback(input, message, type) {
+    // Feedback functions for validation messages
+    function showAmountFeedback(input, message, type = 'info') {
+        // Remove existing feedback
         clearAmountFeedback(input);
         
         const feedback = document.createElement('div');
-        feedback.className = `amount-feedback text-${type === 'warning' ? 'warning' : 'danger'} small mt-1`;
-        feedback.textContent = message;
+        feedback.className = `amount-feedback ${type === 'error' ? 'text-danger' : type === 'warning' ? 'text-warning' : 'text-info'}`;
+        feedback.innerHTML = `<i class="fas fa-${type === 'error' ? 'exclamation-circle' : type === 'warning' ? 'exclamation-triangle' : 'info-circle'}"></i> ${message}`;
+        feedback.style.fontSize = '0.8rem';
+        feedback.style.marginTop = '2px';
         
-        input.closest('.input-group').parentNode.appendChild(feedback);
+        const parentDiv = input.closest('.mb-3') || input.parentNode;
+        parentDiv.appendChild(feedback);
+        
+        // Auto-remove after delay
+        setTimeout(() => clearAmountFeedback(input), 3000);
     }
-
+    
     function clearAmountFeedback(input) {
-        const existing = input.closest('.mb-3').querySelector('.amount-feedback');
+        const parentDiv = input.closest('.mb-3') || input.parentNode;
+        const existing = parentDiv ? parentDiv.querySelector('.amount-feedback') : null;
         if (existing) {
             existing.remove();
         }
@@ -936,9 +969,12 @@ document.addEventListener('DOMContentLoaded', function() {
         let currencies = new Set();
         
         items.forEach(item => {
-            const amountInput = item.querySelector('.amount-field');
+            // Try both new and old amount input classes
+            const amountInput = item.querySelector('.decimal-input-safe') || item.querySelector('.amount-field');
             const currencySelect = item.querySelector('.currency-select');
             const hkdEquivalentInput = item.querySelector('.hkd-equivalent');
+            
+            if (!amountInput) return; // Skip if no amount input found
             
             const amount = parseFloat(amountInput.value) || 0;
             const currency = currencySelect ? currencySelect.value : 'HKD';
@@ -960,44 +996,49 @@ document.addEventListener('DOMContentLoaded', function() {
         // Update currency symbol in amount fields based on selected currency
         items.forEach(item => {
             const currencySelect = item.querySelector('.currency-select');
-            const inputGroup = item.querySelector('.input-group');
-            const currencySymbol = inputGroup.querySelector('.input-group-text');
+            const inputGroups = item.querySelectorAll('.input-group');
             
-            if (currencySelect && currencySymbol) {
-                const selectedCurrency = currencySelect.value;
-                switch(selectedCurrency) {
-                    case 'USD':
-                        currencySymbol.textContent = '$';
-                        break;
-                    case 'HKD':
-                        currencySymbol.textContent = 'HK$';
-                        break;
-                    case 'CNY':
-                    case 'RMB':
-                        currencySymbol.textContent = '¥';
-                        break;
-                    case 'EUR':
-                        currencySymbol.textContent = '€';
-                        break;
-                    case 'GBP':
-                        currencySymbol.textContent = '£';
-                        break;
-                    case 'JPY':
-                        currencySymbol.textContent = '¥';
-                        break;
-                    case 'SGD':
-                        currencySymbol.textContent = 'S$';
-                        break;
-                    case 'AUD':
-                        currencySymbol.textContent = 'A$';
-                        break;
-                    case 'CAD':
-                        currencySymbol.textContent = 'C$';
-                        break;
-                    default:
-                        currencySymbol.textContent = selectedCurrency || '$';
+            // Find the input group that contains the amount field (new or old class)
+            inputGroups.forEach(group => {
+                if (group.querySelector('.decimal-input-safe') || group.querySelector('.amount-field')) {
+                    const currencySymbol = group.querySelector('.input-group-text');
+                    if (currencySelect && currencySymbol) {
+                        const selectedCurrency = currencySelect.value;
+                        switch(selectedCurrency) {
+                            case 'USD':
+                                currencySymbol.textContent = '$';
+                                break;
+                            case 'HKD':
+                                currencySymbol.textContent = 'HK$';
+                                break;
+                            case 'CNY':
+                            case 'RMB':
+                                currencySymbol.textContent = '¥';
+                                break;
+                            case 'EUR':
+                                currencySymbol.textContent = '€';
+                                break;
+                            case 'GBP':
+                                currencySymbol.textContent = '£';
+                                break;
+                            case 'JPY':
+                                currencySymbol.textContent = '¥';
+                                break;
+                            case 'SGD':
+                                currencySymbol.textContent = 'S$';
+                                break;
+                            case 'AUD':
+                                currencySymbol.textContent = 'A$';
+                                break;
+                            case 'CAD':
+                                currencySymbol.textContent = 'C$';
+                                break;
+                            default:
+                                currencySymbol.textContent = selectedCurrency || '$';
+                        }
+                    }
                 }
-            }
+            });
         });
     }
 
@@ -1009,25 +1050,19 @@ document.addEventListener('DOMContentLoaded', function() {
         // Check if month is selected
         const monthSelect = document.getElementById('expense-month');
         if (!monthSelect.value) {
-            showAmountFeedback(monthSelect, '❌ Please select an expense month', 'error');
+            showAmountFeedback(monthSelect, 'Please select an expense month', 'error');
             isValid = false;
         }
         
-        // Validate amount fields and convert formatted amounts back to numeric
-        const amountFields = document.querySelectorAll('.amount-field');
+        // Validate amount fields (both new and old classes)
+        const amountFields = document.querySelectorAll('.decimal-input-safe, .amount-field');
         amountFields.forEach(field => {
-            // Remove commas for submission
-            if (field.value) {
-                const rawValue = parseFloat(field.value.replace(/,/g, ''));
-                if (isNaN(rawValue) || rawValue <= 0) {
-                    showAmountFeedback(field, '❌ Please enter a valid amount', 'error');
-                    isValid = false;
-                } else {
-                    field.value = rawValue.toFixed(2);
-                }
-            } else {
-                showAmountFeedback(field, '❌ Amount is required', 'error');
+            const value = parseFloat(field.value);
+            if (isNaN(value) || value <= 0) {
+                field.setCustomValidity('Please enter a valid amount');
                 isValid = false;
+            } else {
+                field.setCustomValidity('');
             }
         });
         
@@ -1044,10 +1079,6 @@ document.addEventListener('DOMContentLoaded', function() {
         form.classList.add('was-validated');
     });
 
-    // Initialize
-    updateRemoveButtons();
-    updateTotals();
-    
     // Initialize exchange rates for existing items
     document.querySelectorAll('.currency-select').forEach(select => {
         updateExchangeRateDefaults(select);
@@ -1095,30 +1126,20 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Amount input feedback functions
-    function showAmountFeedback(input, message, type = 'info') {
-        // Remove existing feedback
-        clearAmountFeedback(input);
-        
-        const feedback = document.createElement('div');
-        feedback.className = `amount-feedback ${type === 'error' ? 'text-danger' : type === 'warning' ? 'text-warning' : 'text-info'}`;
-        feedback.innerHTML = `<i class="fas fa-${type === 'error' ? 'exclamation-circle' : type === 'warning' ? 'exclamation-triangle' : 'info-circle'}"></i> ${message}`;
-        feedback.style.fontSize = '0.8rem';
-        feedback.style.marginTop = '2px';
-        
-        input.parentNode.insertAdjacentElement('afterend', feedback);
-        
-        // Auto-remove after delay
-        setTimeout(() => clearAmountFeedback(input), 3000);
-    }
-    
-    function clearAmountFeedback(input) {
-        const existing = input.parentNode.parentNode.querySelector('.amount-feedback');
-        if (existing) {
-            existing.remove();
+    // Safe input handlers for new decimal-input-safe class
+    document.addEventListener('input', function(e) {
+        if (e.target.classList.contains('decimal-input-safe')) {
+            // Use setTimeout to avoid interfering with cursor position
+            setTimeout(function() {
+                const expenseItem = e.target.closest('.expense-item');
+                if (expenseItem) {
+                    updateHKDEquivalent(expenseItem);
+                    updateTotals();
+                }
+            }, 0);
         }
-    }
-    
+    });
+
     // Initialize page
     updateRemoveButtons();
     updateTotals();

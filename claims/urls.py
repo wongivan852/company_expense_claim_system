@@ -25,6 +25,10 @@ urlpatterns = [
     path('print/combined/', print_views.print_combined_claims_view, name='print_combined_claims'),
     path('<int:pk>/print/', print_views.print_claim_view, name='print_claim'),
     
+    # Print with receipts functionality
+    path('print/combined-receipts/', print_views.print_combined_claims_with_receipts_view, name='print_combined_claims_receipts'),
+    path('<int:pk>/print-receipts/', print_views.print_claim_with_receipts_view, name='print_claim_receipts'),
+    
     # Approval workflows
     path('pending/', views.pending_approvals_view, name='pending_approvals'),
     path('<int:pk>/approve/', views.approve_claim_view, name='approve_claim'),

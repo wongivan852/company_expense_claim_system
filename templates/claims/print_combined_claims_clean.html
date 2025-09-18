@@ -1,0 +1,327 @@
+{% load print_filters %}
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Combined Claims Print</title>
+        <style>
+            /* Print-specific styles */
+            @media print {
+                .no-print { display: none; }
+                .page-break { page-break-before: always; }
+            }
+            
+            /* Base styles matching PDF format */
+            body {
+                font-family: 'DejaVu Sans', Arial, sans-serif;
+                font-size: 10pt;
+                line-height: 1.2;
+                margin: 0;
+                padding: 10mm;
+                color: #000;
+            }
+            
+            .print-container {
+                max-width: 100%;
+                margin: 0;
+            }
+            
+            .header {
+                text-align: center;
+                margin-bottom: 15px;
+                border-bottom: 2px solid #000;
+                padding-bottom: 8px;
+            }
+            
+            .company-name {
+                font-size: 14pt;
+                font-weight: bold;
+                margin-bottom: 5px;
+            }
+            
+            .form-title {
+                font-size: 12pt;
+                font-weight: bold;
+                margin: 3px 0;
+            }
+            
+            /* Table styles */
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-bottom: 10px;
+                font-size: 9pt;
+            }
+            
+            th, td {
+                border: 1px solid #000;
+                padding: 3px;
+                vertical-align: top;
+                text-align: left;
+            }
+            
+            th {
+                background-color: #f0f0f0;
+                font-weight: bold;
+                text-align: center;
+            }
+            
+            .amount-cell {
+                text-align: right;
+                font-family: monospace;
+            }
+            
+            .category-cols {
+                width: 60px;
+                text-align: center;
+            }
+            
+            .total-col {
+                width: 70px;
+                background-color: #f9f9f9;
+            }
+            
+            .exchange-col {
+                width: 50px;
+            }
+            
+            .total-row {
+                background-color: #e6e6e6;
+                font-weight: bold;
+            }
+            
+            .total-row td {
+                border-top: 2px solid #000;
+            }
+            
+            /* Info section */
+            .info-section {
+                margin-bottom: 10px;
+            }
+            
+            .info-row {
+                display: flex;
+                margin-bottom: 3px;
+            }
+            
+            .info-label {
+                width: 80px;
+                font-weight: bold;
+            }
+            
+            .info-value {
+                flex: 1;
+            }
+            
+            /* Approval section */
+            .approval-section {
+                display: flex;
+                gap: 20px;
+                margin-top: 15px;
+                margin-bottom: 15px;
+            }
+            
+            .approval-box {
+                flex: 1;
+                border: 1px solid #000;
+                padding: 5px;
+                min-height: 50px;
+            }
+            
+            .approval-label {
+                font-weight: bold;
+                margin-bottom: 5px;
+                text-align: center;
+                border-bottom: 1px solid #ccc;
+            }
+            
+            /* Receipt references */
+            .receipt-references {
+                margin-top: 15px;
+                border: 1px solid #000;
+                padding: 8px;
+            }
+            
+            .receipt-references-title {
+                font-weight: bold;
+                margin-bottom: 8px;
+                text-align: center;
+            }
+            
+            .receipt-refs-row {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 10px;
+                justify-content: space-around;
+            }
+            
+            .receipt-ref-item {
+                border: 1px dashed #666;
+                padding: 5px;
+                text-align: center;
+                min-width: 80px;
+            }
+            
+            /* Footer */
+            .info-footer {
+                margin-top: 15px;
+                text-align: center;
+                font-size: 8pt;
+                border-top: 1px solid #ccc;
+                padding-top: 5px;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="print-container">
+            <!-- Header -->
+            <div class="header">
+                <div class="company-name">{{ combined_data.company_name|default:"Company Name" }}</div>
+                <div class="form-title">COMBINED EXPENSE CLAIMS</div>
+                <div>Combined Report for Multiple Claims</div>
+            </div>
+            
+            <!-- Combined Claims Information -->
+            <div class="info-section">
+                <div class="info-row">
+                    <span class="info-label">Claims:</span>
+                    <span class="info-value">
+                        {% for claim in combined_data.claims %}
+                            {{ claim.claim_number }}{% if not forloop.last %}, {% endif %}
+                        {% endfor %}
+                    </span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Employee:</span>
+                    <span class="info-value">{{ combined_data.employee_name|default:"N/A" }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Department:</span>
+                    <span class="info-value">{{ combined_data.department|default:"N/A" }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Total Amount:</span>
+                    <span class="info-value">{{ combined_data.total_hkd|floatformat:2 }} HKD</span>
+                </div>
+            </div>
+            
+            <!-- Main expense table -->
+            <table>
+                <thead>
+                    <!-- Header row with dynamic categories -->
+                    <tr>
+                        <th rowspan="2" style="width: 60px;">Date</th>
+                        <th rowspan="2" style="width: 120px;">Description</th>
+                        <th rowspan="2" style="width: 80px;">Claim Ref</th>
+                        <th rowspan="2" style="width: 40px;">Receipt</th>
+                        <!-- Dynamic category columns -->
+                        {% for category in combined_data.present_categories %}
+                        <th class="category-cols">{{ category.name_chinese }}</th>
+                        {% endfor %}
+                        <th rowspan="2" class="exchange-col">Rate</th>
+                        <th rowspan="2" class="total-col">Amount (HKD)</th>
+                    </tr>
+                    <!-- Second row for English category labels -->
+                    <tr>
+                        {% for category in combined_data.present_categories %}
+                        <th class="category-cols">{{ category.name_english }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Expense items -->
+                    {% for item in combined_data.expense_items %}
+                    <tr>
+                        <td>{{ item.expense_date|date:"m/d" }}</td>
+                        <td>
+                            {{ item.description }}
+                            {% if item.description_chinese %}
+                            <br><small>{{ item.description_chinese }}</small>
+                            {% endif %}
+                            {% if item.participants %}
+                            <br><small>Participants: {{ item.participants }}</small>
+                            {% endif %}
+                            {% if not item.has_receipt %}
+                            <br><small class="no-receipt">No Receipt</small>
+                            {% else %}
+                            {% if item.receipt_notes %}
+                            <br><small>{{ item.receipt_notes }}</small>
+                            {% endif %}
+                            {% endif %}
+                        </td>
+                        <td style="text-align: center; font-weight: bold;">{{ item.claim.claim_number }}</td>
+                        <td style="text-align: center;">{{ item.item_number }}</td>
+                        
+                        <!-- Dynamic Category Amount Columns - only show categories with amounts -->
+                        {% for category in combined_data.present_categories %}
+                            {% if item.category.code == category.code %}
+                            <td class="amount-cell category-cols">{{ item.amount_hkd|floatformat:2 }}</td>
+                            {% else %}
+                            <td class="category-cols"></td>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        <td class="amount-cell exchange-col">{{ item.exchange_rate|floatformat:2 }}</td>
+                        <td class="amount-cell total-col">{{ item.amount_hkd|floatformat:2 }}</td>
+                    </tr>
+                    {% endfor %}
+                    
+                    <!-- Total Row -->
+                    <tr class="total-row">
+                        <td colspan="4"><strong>Combined Total</strong></td>
+                        {% for category in combined_data.present_categories %}
+                        <td class="amount-cell">{{ combined_data.category_totals|get_item:category.code|floatformat:2 }}</td>
+                        {% endfor %}
+                        <td></td>
+                        <td class="amount-cell"><strong>{{ combined_data.total_hkd|floatformat:2 }}</strong></td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <!-- Approval Section -->
+            <div class="approval-section">
+                <div class="approval-box">
+                    <div class="approval-label">Claim checked by</div>
+                    <!-- Show first approver info if any claim was checked -->
+                    {% if combined_data.checked_by %}
+                    <div>{{ combined_data.checked_by.get_full_name }}</div>
+                    <div><small>{{ combined_data.checked_at|date:"M d, Y" }}</small></div>
+                    {% endif %}
+                </div>
+                <div class="approval-box">
+                    <div class="approval-label">Approved</div>
+                    <!-- Show first approver info if any claim was approved -->
+                    {% if combined_data.approved_by %}
+                    <div>{{ combined_data.approved_by.get_full_name }}</div>
+                    <div><small>{{ combined_data.approved_at|date:"M d, Y" }}</small></div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Receipt References Section for Physical Attachment -->
+            <div class="receipt-references">
+                <div class="receipt-references-title">Physical Receipt References (for manual attachment):</div>
+                <div class="receipt-refs-row">
+                    {% for claim in combined_data.claims %}
+                    <div class="receipt-ref-item">
+                        <strong>{{ claim.claim_number }}</strong>
+                        <br><small>Claim Ref</small>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <!-- Combined Claims Information Footer -->
+            <div class="info-footer">
+                <div><strong>Total Combined Amount:</strong> {{ combined_data.total_hkd|floatformat:2 }} HKD</div>
+                <div><strong>Number of Claims:</strong> {{ combined_data.claims|length }}</div>
+                <div><strong>Generated:</strong> {% now "F d, Y g:i A" %}</div>
+            </div>
+        </div>
+        
+        <script>
+            // Auto-print when page loads (optional)
+            // window.onload = function() { window.print(); }
+        </script>
+    </body>
+</html>
