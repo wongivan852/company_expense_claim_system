@@ -27,7 +27,8 @@ def print_claim_view(request, pk):
         return redirect('claims:claim_detail', pk=pk)
     
     # Prepare data structure that matches template expectations
-    expense_items = claim.expense_items.all().order_by('item_number')
+    # Sort by expense_date for chronological order (oldest first), then by item_number for consistency
+    expense_items = list(claim.expense_items.all().order_by('expense_date', 'created_at'))
     
     # Find unique categories used in this claim  
     used_categories = []
@@ -128,16 +129,22 @@ def print_combined_claims_view(request):
             total_hkd += claim.total_amount_hkd
         claim_numbers.append(claim.claim_number)
         
-        for item in claim.expense_items.all().order_by('item_number'):
+        # Collect all items from this claim (sort within claim first)
+        for item in claim.expense_items.all().order_by('expense_date', 'created_at'):
             # Add claim context to item
-            item.combined_item_number = item_counter
             item.claim_reference = claim.claim_number
             all_items.append(item)
-            item_counter += 1
             
             # Update category totals for present categories only
             if item.category and item.amount_hkd and item.category.code in category_totals:
                 category_totals[item.category.code] += item.amount_hkd
+    
+    # CRITICAL: Sort ALL items globally by expense_date for true chronological order
+    all_items.sort(key=lambda item: (item.expense_date, item.created_at))
+    
+    # NOW assign combined item numbers in chronological order
+    for idx, item in enumerate(all_items, 1):
+        item.combined_item_number = idx
     
     combined_data = {
         'claims': allowed_claims,

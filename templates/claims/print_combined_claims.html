@@ -7,12 +7,10 @@
     <title>Combined Expense Claims - {{ combined_data.claim_numbers }}</title>
     <style>
         /* Print-specific styles */
-        @media p            </tbody>
-        </table>
-        
-        <!-- Approval Section -->        @page {
+        @media print {
+            @page {
                 margin: 0.5in;
-                size: A4;
+                size: A4 landscape;
             }
             .no-print { display: none; }
             .page-break { page-break-before: always; }
@@ -227,6 +225,101 @@
         .claims-info strong {
             color: #495057;
         }
+        
+        /* Receipt copies section for A4 landscape */
+        .receipt-copies-section {
+            margin-top: 15px;
+            padding: 15px 0;
+            height: calc(100vh - 60px);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .receipt-copies-title {
+            font-weight: bold;
+            font-size: 13px;
+            margin-bottom: 15px;
+            text-align: center;
+            border-bottom: 1px solid #333;
+            padding-bottom: 8px;
+        }
+        
+        .receipt-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            align-items: stretch;
+            flex-grow: 1;
+        }
+        
+        /* For landscape A4: 3 receipts per row */
+        @media print {
+            .receipt-grid {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 25px;
+            }
+            .page-break { page-break-before: always; }
+            .page-break-after { page-break-after: always; }
+            
+            .receipt-copies-section {
+                margin-top: 0;
+                padding: 15px 0;
+                page-break-inside: avoid;
+                height: calc(100vh - 40px);
+            }
+        }
+        
+        .receipt-item {
+            border: 2px solid #333;
+            padding: 15px;
+            background: white;
+            break-inside: avoid;
+            page-break-inside: avoid;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .receipt-header {
+            background: #e0e0e0;
+            padding: 8px;
+            margin: -15px -15px 15px -15px;
+            font-size: 11px;
+            font-weight: bold;
+            text-align: center;
+            border-bottom: 1px solid #333;
+        }
+        
+        .receipt-image {
+            width: 100%;
+            height: 200px;
+            object-fit: contain;
+            border: 1px solid #999;
+            background: #fafafa;
+            margin-bottom: 8px;
+        }
+        
+        .receipt-details {
+            font-size: 10px;
+            line-height: 1.4;
+            margin-top: auto;
+        }
+        
+        .receipt-placeholder {
+            width: 100%;
+            height: 200px;
+            border: 2px dashed #999;
+            background: #f9f9f9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            font-style: italic;
+            text-align: center;
+            padding: 8px;
+            font-size: 11px;
+            margin-bottom: 8px;
+        }
     </style>
 </head>
 <body>
@@ -363,18 +456,62 @@
             </div>
         </div>
 
-        <!-- Receipt References Section for Physical Attachment -->
-        <div class="receipt-references">
-            <div class="receipt-references-title">Physical Receipt References (for manual attachment):</div>
-            <div class="receipt-refs-row">
-                {% for claim in combined_data.claims %}
-                <div class="receipt-ref-item">
-                    <strong>{{ claim.claim_number }}</strong>
-                    <br><small>Claim Ref</small>
+        <!-- Receipt Copies Section - With Page Breaks for A4 Landscape -->
+        {% if combined_data.expense_items %}
+        <div class="page-break"></div>
+        <div class="receipt-copies-section">
+            <div class="receipt-copies-title">
+                Receipt Copies for Combined Claims
+            </div>
+            
+            <div class="receipt-grid">
+                {% for item in combined_data.expense_items %}
+                <div class="receipt-item">
+                    <div class="receipt-header">
+                        Ref: {{ item.claim_reference }} - {{ item.expense_date|date:"M d, Y" }}
+                    </div>
+                    
+                    {% if item.documents.exists %}
+                        {% with receipt=item.documents.first %}
+                        {% if receipt.file %}
+                            {% if receipt.file.url|slice:"-4:"|lower == ".pdf" %}
+                            <div class="receipt-placeholder">
+                                <div>
+                                    <i class="fas fa-file-pdf fa-3x"></i><br>
+                                    PDF Receipt<br>
+                                    <small>{{ receipt.file.name|truncatechars:30 }}</small>
+                                </div>
+                            </div>
+                            {% else %}
+                            <img src="{{ receipt.file.url }}" class="receipt-image" alt="Receipt">
+                            {% endif %}
+                        {% endif %}
+                        {% endwith %}
+                    {% else %}
+                        <div class="receipt-placeholder">
+                            <div>No Receipt<br><small>{{ item.receipt_notes|default:"Receipt not uploaded" }}</small></div>
+                        </div>
+                    {% endif %}
+                    
+                    <div class="receipt-details">
+                        <strong>{{ item.category.name }}</strong><br>
+                        {{ item.description|truncatechars:60 }}<br>
+                        <strong>Amount:</strong> {{ item.currency.code }} {{ item.original_amount|floatformat:2 }}<br>
+                        <strong>HKD:</strong> {{ item.amount_hkd|floatformat:2 }}
+                    </div>
                 </div>
+                
+                {% if forloop.counter|divisibleby:3 and not forloop.last %}
+                    </div>
+                    <!-- Page break after every 3 receipts -->
+                    <div class="page-break"></div>
+                    <div class="receipt-copies-section">
+                        <div class="receipt-grid">
+                {% endif %}
                 {% endfor %}
             </div>
         </div>
+        {% endif %}
     </div>
 
     <script>

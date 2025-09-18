@@ -413,11 +413,12 @@
             });
         });
 
-        amountFields.forEach(function(field) {
-            field.addEventListener('input', function() {
-                formatCurrency(this);
-            });
-        });
+        // DISABLED: Conflicting with claim form's amount handling
+        // amountFields.forEach(function(field) {
+        //     field.addEventListener('input', function() {
+        //         formatCurrency(this);
+        //     });
+        // });
     }
 
     function updateExchangeRate(currencySelect) {

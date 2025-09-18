@@ -174,8 +174,8 @@
                                             <option value="2025-05">May 2025</option>
                                             <option value="2025-06">June 2025</option>
                                             <option value="2025-07">July 2025</option>
-                                            <option value="2025-08" selected>August 2025</option>
-                                            <option value="2025-09">September 2025</option>
+                                            <option value="2025-08">August 2025</option>
+                                            <option value="2025-09" selected>September 2025</option>
                                             <option value="2025-10">October 2025</option>
                                             <option value="2025-11">November 2025</option>
                                             <option value="2025-12">December 2025</option>
@@ -713,19 +713,22 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Enhanced amount input handling with real-time formatting
+    // Simplified amount input handling - minimal interference during typing
     document.addEventListener('input', function(e) {
         if (e.target.classList.contains('amount-field')) {
-            handleAmountInput(e.target);
-            updateHKDEquivalent(e.target.closest('.expense-item'));
-            updateTotals();
+            // Only update HKD equivalent, don't modify the input value during typing
+            const expenseItem = e.target.closest('.expense-item');
+            if (expenseItem) {
+                updateHKDEquivalent(expenseItem);
+                updateTotals();
+            }
         }
     });
     
-    // Format on blur for final display
+    // Light validation on blur
     document.addEventListener('blur', function(e) {
         if (e.target.classList.contains('amount-field')) {
-            formatAmountForDisplay(e.target);
+            validateAndFormatAmount(e.target);
         }
         if (e.target.classList.contains('exchange-rate-input')) {
             formatExchangeRateInput(e.target);
@@ -739,64 +742,64 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    function handleAmountInput(input) {
-        let value = input.value;
+    function validateAndFormatAmount(input) {
+        let value = input.value.trim();
         
-        // Store original for potential restoration
-        if (!input.dataset.editValue) {
-            input.dataset.editValue = value;
+        if (value === '') {
+            return; // Allow empty values
         }
         
-        // Remove non-numeric characters except decimal point
+        // Remove any non-numeric characters except decimal point
         value = value.replace(/[^\d.]/g, '');
         
-        // Handle multiple decimal points
-        const decimalCount = (value.match(/\./g) || []).length;
-        if (decimalCount > 1) {
-            const parts = value.split('.');
+        // Handle multiple decimal points - keep only the first one
+        const parts = value.split('.');
+        if (parts.length > 2) {
             value = parts[0] + '.' + parts.slice(1).join('');
         }
         
         // Limit to 2 decimal places
-        const decimalIndex = value.indexOf('.');
-        if (decimalIndex !== -1 && value.length > decimalIndex + 3) {
-            value = value.substring(0, decimalIndex + 3);
+        if (value.includes('.')) {
+            const [whole, decimal] = value.split('.');
+            if (decimal && decimal.length > 2) {
+                value = whole + '.' + decimal.substring(0, 2);
+            }
         }
         
-        // Limit maximum value with user-friendly feedback
+        // Convert to number and validate
         const numValue = parseFloat(value);
+        if (isNaN(numValue) || numValue < 0) {
+            showAmountFeedback(input, '❌ Please enter a valid amount', 'error');
+            input.value = '';
+            return;
+        }
+        
+        // Check reasonable limits
         if (numValue > 999999.99) {
-            value = '999999.99';
             showAmountFeedback(input, '💰 Maximum amount: $999,999.99', 'info');
+            value = '999999.99';
         }
         
-        // Minimum value check (but allow empty for editing)
-        if (numValue > 0 && numValue < 0.01) {
-            showAmountFeedback(input, '💡 Minimum amount: $0.01', 'info');
+        // Format to 2 decimal places for consistency
+        input.value = numValue.toFixed(2);
+        
+        // Update HKD equivalent after validation
+        const expenseItem = input.closest('.expense-item');
+        if (expenseItem) {
+            updateHKDEquivalent(expenseItem);
         }
-        
-        input.value = value;
-        
-        // Clear feedback after short delay
-        setTimeout(() => clearAmountFeedback(input), 2500);
     }
 
     function formatAmountForDisplay(input) {
-        let value = parseFloat(input.value.replace(/,/g, ''));
-        if (value && !isNaN(value)) {
-            // Store raw value for calculations
-            input.dataset.rawValue = value.toString();
-            // Format with commas for display
+        // Simplified formatting - only add commas for display
+        const cleanValue = input.value.replace(/,/g, '');
+        const value = parseFloat(cleanValue);
+        if (!isNaN(value) && value >= 0) {
+            input.dataset.rawValue = value.toFixed(2);
             input.value = value.toLocaleString('en-US', {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2
             });
-        } else if (input.value.trim() === '') {
-            input.value = '';
-        } else {
-            // Invalid input - clear and show feedback
-            input.value = '';
-            showAmountFeedback(input, '❌ Please enter a valid amount', 'error');
         }
     }
     
@@ -806,11 +809,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const rawValue = input.dataset.rawValue || input.value.replace(/,/g, '');
             input.value = rawValue;
         }
-    }
-
-    function formatAmountInput(input) {
-        // This function is kept for backward compatibility
-        formatAmountForDisplay(input);
     }
 
     // Currency and exchange rate change handling
@@ -884,7 +882,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const exchangeRateInput = expenseItem.querySelector('.exchange-rate-input');
         const hkdEquivalentInput = expenseItem.querySelector('.hkd-equivalent');
         
-        const amount = parseFloat(amountInput.value) || 0;
+        // Parse amount, removing any commas first
+        const cleanValue = amountInput.value.replace(/,/g, '');
+        const amount = parseFloat(cleanValue) || 0;
         const exchangeRate = parseFloat(exchangeRateInput.value) || 1;
         
         const hkdAmount = amount * exchangeRate;
