@@ -64,6 +64,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "sso_integration.SSOMiddleware",  # SSO integration middleware
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
@@ -315,3 +316,17 @@ LOGGING = {
         },
     },
 }
+
+# Authentication backends
+AUTHENTICATION_BACKENDS = [
+    'sso_integration.SSOAuthenticationBackend',  # SSO integration backend
+    'django.contrib.auth.backends.ModelBackend',
+]
+
+# Session settings
+SESSION_COOKIE_AGE = 86400  # 24 hours
+SESSION_SAVE_EVERY_REQUEST = True
+
+# SSO Integration Settings
+SSO_BASE_URL = config('SSO_BASE_URL', default='http://localhost:8080')
+SSO_SECRET_KEY = config('SSO_SECRET_KEY', default='default-secret-key')

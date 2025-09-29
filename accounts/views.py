@@ -1,8 +1,11 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.contrib.auth import update_session_auth_hash
+from django.contrib.auth import update_session_auth_hash, logout
 from django.contrib.auth.forms import PasswordChangeForm
+from django.http import HttpResponseRedirect
+from urllib.parse import urlencode
+from sso_integration import get_sso_login_url, sso_logout
 
 @login_required
 def profile_view(request):
@@ -47,3 +50,42 @@ def profile_view(request):
     return render(request, 'accounts/profile.html', {
         'user': request.user
     })
+
+
+def sso_login_view(request):
+    """
+    Redirect to SSO login with return URL
+    """
+    # Get the next URL to redirect after login
+    next_url = request.GET.get('next')
+    if not next_url:
+        next_url = request.build_absolute_uri('/')
+
+    # Build SSO login URL with return URL
+    sso_login_base = get_sso_login_url()
+    expense_app_url = request.build_absolute_uri('/')
+
+    # Create the return URL with SSO token parameter
+    return_params = {
+        'app': 'expense_system',
+        'return_to': expense_app_url + ('?next=' + next_url if next_url != expense_app_url else '')
+    }
+
+    sso_login_url = f"{sso_login_base}?{urlencode(return_params)}"
+
+    return HttpResponseRedirect(sso_login_url)
+
+
+def sso_logout_view(request):
+    """
+    Handle SSO logout
+    """
+    # Notify central platform about logout
+    if request.user.is_authenticated:
+        sso_logout(request)
+
+    # Logout from local session
+    logout(request)
+
+    # Redirect to SSO login
+    return redirect('accounts:sso_login')

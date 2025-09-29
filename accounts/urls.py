@@ -6,10 +6,12 @@ from . import views
 app_name = 'accounts'
 
 urlpatterns = [
-    # Authentication URLs
-    path('login/', auth_views.LoginView.as_view(template_name='accounts/login.html'), name='login'),
-    path('logout/', auth_views.LogoutView.as_view(template_name='accounts/logout.html'), name='logout'),
-    
+    # SSO Authentication URLs
+    path('login/', views.sso_login_view, name='login'),
+    path('logout/', views.sso_logout_view, name='logout'),
+    path('sso/login/', views.sso_login_view, name='sso_login'),
+    path('sso/logout/', views.sso_logout_view, name='sso_logout'),
+
     # Profile management
     path('profile/', views.profile_view, name='profile'),
     path('', views.profile_view, name='index'),

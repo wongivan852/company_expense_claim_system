@@ -17,7 +17,7 @@ RUN apt-get update \
         libmagic1 \
         tesseract-ocr \
         tesseract-ocr-eng \
-        libgl1-mesa-glx \
+        libgl1-mesa-dev \
         libglib2.0-0 \
         libsm6 \
         libxext6 \
