@@ -10,10 +10,10 @@
         My Expense Claims
     </h1>
     <div class="btn-group" role="group">
-        <a href="{% url 'claims:select_claims_print' %}" class="btn btn-outline-secondary">
+        <a href="{% url 'expense_claims:select_claims_print' %}" class="btn btn-outline-secondary">
             <i class="fas fa-print"></i> Print Claims
         </a>
-        <a href="{% url 'claims:claim_create' %}" class="btn btn-primary btn-lg">
+        <a href="{% url 'expense_claims:claim_create' %}" class="btn btn-primary btn-lg">
             <i class="fas fa-plus-circle"></i> New Claim
         </a>
     </div>
@@ -56,7 +56,7 @@
                 <button type="submit" class="btn btn-primary">
                     <i class="fas fa-search"></i> Filter
                 </button>
-                <a href="{% url 'claims:claim_list' %}" class="btn btn-outline-secondary">
+                <a href="{% url 'expense_claims:claim_list' %}" class="btn btn-outline-secondary">
                     <i class="fas fa-times"></i> Clear
                 </a>
             </div>
@@ -141,14 +141,14 @@
                         </td>
                         <td>
                             <div class="btn-group" role="group">
-                                <a href="{% url 'claims:claim_detail' claim.pk %}" 
+                                <a href="{% url 'expense_claims:claim_detail' claim.pk %}" 
                                    class="btn btn-sm btn-outline-primary" 
                                    data-bs-toggle="tooltip" 
                                    title="View Details">
                                     <i class="fas fa-eye"></i>
                                 </a>
                                 {% if claim.status == 'draft' %}
-                                <a href="{% url 'claims:claim_edit' claim.pk %}" 
+                                <a href="{% url 'expense_claims:claim_edit' claim.pk %}" 
                                    class="btn btn-sm btn-outline-warning"
                                    data-bs-toggle="tooltip" 
                                    title="Edit">
@@ -230,7 +230,7 @@
                     You haven't created any expense claims yet.
                 {% endif %}
             </p>
-            <a href="{% url 'claims:claim_create' %}" class="btn btn-primary btn-lg">
+            <a href="{% url 'expense_claims:claim_create' %}" class="btn btn-primary btn-lg">
                 <i class="fas fa-plus-circle"></i> Create Your First Claim
             </a>
         </div>

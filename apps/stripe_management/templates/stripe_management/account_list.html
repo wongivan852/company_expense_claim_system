@@ -1,0 +1,18 @@
+{% extends 'base_simple.html' %}
+
+{% block title %}Stripe Accounts{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <h1 class="mb-4"><i class="fas fa-building me-2"></i>Stripe Accounts</h1>
+    
+    <div class="card">
+        <div class="card-body">
+            <p>Stripe account management coming soon. Use the Django admin panel to add accounts for now.</p>
+            <a href="{% url 'admin:stripe_management_stripeaccount_changelist' %}" class="btn btn-primary">
+                <i class="fas fa-cog me-2"></i>Manage in Admin
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

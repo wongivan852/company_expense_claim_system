@@ -13,7 +13,7 @@
             </h1>
             {% if user.is_authenticated %}
             <div>
-                <a href="{% url 'claims:claim_create' %}" class="btn btn-primary btn-lg">
+                <a href="{% url 'expense_claims:claim_create' %}" class="btn btn-primary btn-lg">
                     <i class="fas fa-plus-circle"></i> New Claim
                 </a>
             </div>
@@ -98,7 +98,7 @@
                 <h5 class="card-title mb-0">
                     <i class="fas fa-history"></i> Recent Claims
                 </h5>
-                <a href="{% url 'claims:claim_list' %}" class="btn btn-sm btn-outline-primary">View All</a>
+                <a href="{% url 'expense_claims:claim_list' %}" class="btn btn-sm btn-outline-primary">View All</a>
             </div>
             <div class="card-body">
                 {% if recent_claims %}
@@ -139,7 +139,7 @@
                                 </td>
                                 <td>{{ claim.created_at|date:"M d, Y" }}</td>
                                 <td>
-                                    <a href="{% url 'claims:claim_detail' claim.pk %}" class="btn btn-sm btn-outline-primary">
+                                    <a href="{% url 'expense_claims:claim_detail' claim.pk %}" class="btn btn-sm btn-outline-primary">
                                         <i class="fas fa-eye"></i> View
                                     </a>
                                 </td>
@@ -153,7 +153,7 @@
                     <i class="fas fa-file-invoice fa-3x text-muted mb-3"></i>
                     <h5 class="text-muted">No claims yet</h5>
                     <p class="text-muted">Create your first expense claim to get started.</p>
-                    <a href="{% url 'claims:claim_create' %}" class="btn btn-primary">
+                    <a href="{% url 'expense_claims:claim_create' %}" class="btn btn-primary">
                         <i class="fas fa-plus"></i> Create Claim
                     </a>
                 </div>
@@ -172,7 +172,7 @@
             </div>
             <div class="card-body">
                 <div class="d-grid gap-2">
-                    <a href="{% url 'claims:claim_create' %}" class="btn btn-primary">
+                    <a href="{% url 'expense_claims:claim_create' %}" class="btn btn-primary">
                         <i class="fas fa-plus-circle"></i> New Expense Claim
                     </a>
                     <a href="{% url 'documents:upload' %}" class="btn btn-outline-secondary">

@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Amount Input Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-container { margin: 20px 0; }
+        input { padding: 10px; font-size: 16px; width: 200px; }
+        .log { background: #f0f0f0; padding: 10px; margin: 10px 0; font-family: monospace; }
+    </style>
+</head>
+<body>
+    <h1>Amount Input Test</h1>
+    
+    <div class="test-container">
+        <label>Test Amount Input:</label><br>
+        <input type="text" id="amount-test" class="amount-field" placeholder="Type 71.66">
+    </div>
+    
+    <div class="test-container">
+        <label>Raw Input (no processing):</label><br>
+        <input type="text" id="raw-test" placeholder="Type 71.66">
+    </div>
+    
+    <div id="log" class="log">Log will appear here...</div>
+
+    <script>
+        function log(message) {
+            const logDiv = document.getElementById('log');
+            logDiv.innerHTML += new Date().toLocaleTimeString() + ': ' + message + '<br>';
+        }
+        
+        function validateAmountInput(input) {
+            log('validateAmountInput called with: "' + input.value + '"');
+            // Light validation during typing - just remove invalid characters
+            let value = input.value;
+            
+            // Remove non-numeric characters except decimal point
+            const cleaned = value.replace(/[^\d.]/g, '');
+            
+            // Only update if something was actually removed
+            if (cleaned !== value) {
+                log('  Cleaned from "' + value + '" to "' + cleaned + '"');
+                input.value = cleaned;
+            } else {
+                log('  No change needed');
+            }
+        }
+
+        function handleAmountInput(input) {
+            log('handleAmountInput called with: "' + input.value + '"');
+            let value = input.value;
+            
+            // Store original for potential restoration
+            if (!input.dataset.editValue) {
+                input.dataset.editValue = value;
+            }
+            
+            // Remove non-numeric characters except decimal point
+            value = value.replace(/[^\d.]/g, '');
+            
+            // Handle multiple decimal points - keep only the first decimal point
+            const decimalCount = (value.match(/\./g) || []).length;
+            if (decimalCount > 1) {
+                const firstDecimalIndex = value.indexOf('.');
+                // Keep everything up to and including the first decimal, then only digits after
+                const beforeDecimal = value.substring(0, firstDecimalIndex + 1);
+                const afterDecimal = value.substring(firstDecimalIndex + 1).replace(/\./g, '');
+                value = beforeDecimal + afterDecimal;
+                log('  Multiple decimals fixed: "' + input.value + '" -> "' + value + '"');
+            }
+            
+            // Limit to 2 decimal places
+            const decimalIndex = value.indexOf('.');
+            if (decimalIndex !== -1 && value.length > decimalIndex + 3) {
+                value = value.substring(0, decimalIndex + 3);
+                log('  Limited decimal places: "' + input.value + '" -> "' + value + '"');
+            }
+            
+            // Limit maximum value with user-friendly feedback
+            const numValue = parseFloat(value);
+            if (numValue > 999999.99) {
+                value = '999999.99';
+                log('  Max value applied: "' + input.value + '" -> "' + value + '"');
+            }
+            
+            // Minimum value check (but allow empty for editing)
+            if (numValue > 0 && numValue < 0.01) {
+                log('  Min value warning for: ' + value);
+            }
+            
+            log('  Final value: "' + value + '"');
+            input.value = value;
+        }
+
+        function formatAmountForDisplay(input) {
+            log('formatAmountForDisplay called with: "' + input.value + '"');
+            let value = parseFloat(input.value.replace(/,/g, ''));
+            if (value && !isNaN(value)) {
+                // Store raw value for calculations
+                input.dataset.rawValue = value.toString();
+                // Format with commas for display
+                const formatted = value.toLocaleString('en-US', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                });
+                log('  Formatted: "' + input.value + '" -> "' + formatted + '"');
+                input.value = formatted;
+            } else if (input.value.trim() === '') {
+                input.value = '';
+            } else {
+                // Invalid input - clear and show feedback
+                log('  Invalid input cleared: "' + input.value + '"');
+                input.value = '';
+            }
+        }
+        
+        function clearAmountFormatting(input) {
+            log('clearAmountFormatting called with: "' + input.value + '"');
+            // Remove commas for easier editing
+            if (input.value) {
+                const rawValue = input.dataset.rawValue || input.value.replace(/,/g, '');
+                log('  Unformatted: "' + input.value + '" -> "' + rawValue + '"');
+                input.value = rawValue;
+            }
+        }
+
+        // Event handlers
+        document.addEventListener('input', function(e) {
+            if (e.target.classList.contains('amount-field')) {
+                validateAmountInput(e.target);
+            }
+        });
+        
+        document.addEventListener('blur', function(e) {
+            if (e.target.classList.contains('amount-field')) {
+                handleAmountInput(e.target);
+                formatAmountForDisplay(e.target);
+            }
+        });
+        
+        document.addEventListener('focus', function(e) {
+            if (e.target.classList.contains('amount-field')) {
+                clearAmountFormatting(e.target);
+            }
+        });
+
+        // Add logging to raw input for comparison
+        document.getElementById('raw-test').addEventListener('input', function(e) {
+            log('Raw input: "' + e.target.value + '"');
+        });
+        
+        log('Test page loaded. Type 71.66 in both fields to compare behavior.');
+    </script>
+</body>
+</html>
