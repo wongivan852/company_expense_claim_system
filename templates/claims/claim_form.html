@@ -803,8 +803,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Convert to number and validate
         const numValue = parseFloat(value);
-        if (isNaN(numValue) || numValue === 0) {
-            showAmountFeedback(input, '❌ Please enter a valid amount (negative allowed for returns)', 'error');
+        if (isNaN(numValue)) {
+            showAmountFeedback(input, '❌ Please enter a valid number', 'error');
+            input.value = '';
+            return;
+        }
+        
+        // Check for zero (not allowed)
+        if (numValue === 0) {
+            showAmountFeedback(input, '❌ Amount cannot be zero (negative allowed for returns)', 'error');
             input.value = '';
             return;
         }
@@ -1063,14 +1070,18 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         // Validate amount fields (both new and old classes) - allows negative for returns
-        const amountFields = document.querySelectorAll('.decimal-input-safe, .amount-field');
-        amountFields.forEach(field => {
-            const value = parseFloat(field.value);
-            if (isNaN(value) || value === 0) {
-                field.setCustomValidity('Please enter a valid amount (negative allowed for returns)');
-                isValid = false;
-            } else {
-                field.setCustomValidity('');
+        // Only validate visible expense items, not the template
+        const visibleExpenseItems = document.querySelectorAll('.expense-item:not(#expense-item-template)');
+        visibleExpenseItems.forEach(item => {
+            const amountField = item.querySelector('.decimal-input-safe, .amount-field');
+            if (amountField && amountField.offsetParent !== null) { // Check if visible
+                const value = parseFloat(amountField.value);
+                if (amountField.value.trim() !== '' && (isNaN(value) || value === 0)) {
+                    amountField.setCustomValidity('Please enter a valid non-zero amount (negative allowed for returns)');
+                    isValid = false;
+                } else {
+                    amountField.setCustomValidity('');
+                }
             }
         });
         
