@@ -762,7 +762,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Light validation on blur
     document.addEventListener('blur', function(e) {
-        if (e.target.classList.contains('amount-field')) {
+        if (e.target.classList.contains('amount-field') || e.target.classList.contains('decimal-input-safe')) {
             validateAndFormatAmount(e.target);
         }
         if (e.target.classList.contains('exchange-rate-input')) {
