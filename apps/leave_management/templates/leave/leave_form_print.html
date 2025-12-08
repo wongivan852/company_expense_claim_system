@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Leave Application - {{ application.user.get_full_name|default:application.user.username }}</title>
+    <style>
+        @media print {
+            @page {
+                size: A4 portrait;
+                margin: 15mm;
+            }
+
+            body {
+                margin: 0;
+                background-color: white;
+                font-size: 14px !important;
+                color: #000;
+            }
+            .print-container {
+                box-shadow: none;
+                padding: 20px;
+                max-width: none;
+            }
+            .print-actions {
+                display: none;
+            }
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+            line-height: 1.4;
+            color: #000;
+            background-color: #fff;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        .print-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        
+        .print-actions {
+            margin-bottom: 30px;
+            text-align: center;
+            border-bottom: 2px solid #ddd;
+            padding-bottom: 20px;
+        }
+        
+        .print-actions button, .print-actions a {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 0 5px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        
+        .print-actions .btn-secondary {
+            background: #6c757d;
+        }
+        
+        /* Header */
+        .form-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .company-name {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+        
+        .form-title {
+            font-size: 18px;
+            font-weight: bold;
+        }
+        
+        /* Name field */
+        .name-section {
+            margin-bottom: 30px;
+        }
+        
+        .name-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .name-label {
+            font-weight: bold;
+            margin-right: 20px;
+            width: 80px;
+        }
+        
+        .name-value {
+            border-bottom: 2px solid #000;
+            padding: 5px 0;
+            flex: 1;
+            font-weight: bold;
+        }
+        
+        /* Leave type table */
+        .leave-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+            border: 2px solid #000;
+        }
+        
+        .leave-table th,
+        .leave-table td {
+            border: 1px solid #000;
+            padding: 10px;
+            text-align: left;
+            vertical-align: top;
+        }
+        
+        .leave-table th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+            text-align: center;
+        }
+        
+        .checkbox-col {
+            width: 40px;
+            text-align: center;
+        }
+        
+        .leave-type-col {
+            width: 150px;
+        }
+        
+        .from-col, .to-col {
+            width: 200px;
+        }
+        
+        .checkbox {
+            font-size: 18px;
+            font-weight: bold;
+        }
+        
+        .leave-type {
+            font-weight: bold;
+        }
+        
+        .date-info {
+            line-height: 1.3;
+        }
+        
+        .date-main {
+            font-weight: bold;
+            margin-bottom: 2px;
+        }
+        
+        .time-info {
+            font-size: 12px;
+            color: #666;
+        }
+        
+        /* Form fields */
+        .form-section {
+            margin-bottom: 20px;
+        }
+        
+        .form-row {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+        
+        .form-label {
+            font-weight: bold;
+            margin-right: 20px;
+            min-width: 140px;
+        }
+        
+        .form-value {
+            border-bottom: 2px solid #000;
+            padding: 5px 0;
+            flex: 1;
+            min-height: 20px;
+        }
+        
+        /* Shaded optional sections */
+        .optional-section {
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            padding: 15px;
+            margin-bottom: 20px;
+            opacity: 0.6;
+        }
+        
+        .optional-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .optional-subtitle {
+            font-size: 12px;
+            font-style: italic;
+            color: #666;
+            margin-bottom: 15px;
+        }
+        
+        .optional-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .optional-table td {
+            border: 1px solid #999;
+            padding: 8px;
+            background-color: white;
+        }
+        
+        .optional-table .label-col {
+            width: 100px;
+            font-weight: bold;
+            background-color: #f8f9fa;
+        }
+        
+        /* Signature section */
+        .signature-section {
+            margin-top: 50px;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .signature-box {
+            width: 45%;
+        }
+        
+        .signature-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .signature-line {
+            border-bottom: 2px solid #000;
+            height: 30px;
+            margin-bottom: 10px;
+            padding-top: 5px;
+        }
+        
+        .date-label-row {
+            display: flex;
+            align-items: center;
+        }
+        
+        .date-label {
+            font-weight: bold;
+            margin-right: 20px;
+        }
+        
+        .date-line {
+            border-bottom: 2px solid #000;
+            height: 25px;
+            flex: 1;
+            padding-top: 2px;
+        }
+    </style>
+</head>
+<body>
+    <div class="print-container">
+        {% if not is_pdf %}
+        <div class="print-actions">
+            <button onclick="window.print()">🖨️ Print Form</button>
+            <a href="{% url 'leave_management:leave_form_pdf' application.id %}" class="btn-secondary">💾 Save as PDF</a>
+            <a href="{% url 'leave_management:leave_application_detail' application.id %}" class="btn-secondary">← Back to Application</a>
+        </div>
+        {% endif %}
+        
+        <!-- Header -->
+        <div class="form-header">
+            <div class="company-name">{{ application.user.company|default:"Krystal Institute Ltd" }}</div>
+            <div class="form-title">Employee Leave Application</div>
+        </div>
+        
+        <!-- Name -->
+        <div class="name-section">
+            <div class="name-row">
+                <span class="name-label">Name</span>
+                <div class="name-value">{{ application.user.get_full_name|default:application.user.username }}</div>
+            </div>
+        </div>
+        
+        <!-- Leave Type Table -->
+        <table class="leave-table">
+            <thead>
+                <tr>
+                    <th class="checkbox-col"></th>
+                    <th class="leave-type-col"></th>
+                    <th class="from-col">From</th>
+                    <th class="to-col">To</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="checkbox-col">
+                        <span class="checkbox">{% if application.leave_type.name == "Annual Leave" %}✓{% endif %}</span>
+                    </td>
+                    <td class="leave-type-col">
+                        <span class="leave-type">Annual Leave</span>
+                    </td>
+                    <td class="from-col">
+                        {% if application.leave_type.name == "Annual Leave" %}
+                        <div class="date-info">
+                            <div class="date-main">{{ application.date_from|date:"d/m/Y" }} ({{ application.date_from|date:"D" }})</div>
+                            <div class="time-info">
+                                {% if date_from_local.hour == 9 %}9:00am - 1:00pm{% else %}2:00pm - 6:00pm{% endif %}
+                            </div>
+                        </div>
+                        {% endif %}
+                    </td>
+                    <td class="to-col">
+                        {% if application.leave_type.name == "Annual Leave" %}
+                        <div class="date-info">
+                            <div class="date-main">{{ application.date_to|date:"d/m/Y" }} ({{ application.date_to|date:"D" }})</div>
+                            <div class="time-info">
+                                {% if date_to_local.hour <= 13 %}9:00am - 1:00pm{% else %}2:00pm - 6:00pm{% endif %}
+                            </div>
+                        </div>
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <td class="checkbox-col">
+                        <span class="checkbox">{% if application.leave_type.name == "Sick Leave" %}✓{% endif %}</span>
+                    </td>
+                    <td class="leave-type-col">
+                        <span class="leave-type">Sick Leave</span>
+                    </td>
+                    <td class="from-col">
+                        {% if application.leave_type.name == "Sick Leave" %}
+                        <div class="date-info">
+                            <div class="date-main">{{ application.date_from|date:"d/m/Y" }} ({{ application.date_from|date:"D" }})</div>
+                            <div class="time-info">
+                                {% if date_from_local.hour == 9 %}9:00am - 1:00pm{% else %}2:00pm - 6:00pm{% endif %}
+                            </div>
+                        </div>
+                        {% endif %}
+                    </td>
+                    <td class="to-col">
+                        {% if application.leave_type.name == "Sick Leave" %}
+                        <div class="date-info">
+                            <div class="date-main">{{ application.date_to|date:"d/m/Y" }} ({{ application.date_to|date:"D" }})</div>
+                            <div class="time-info">
+                                {% if date_to_local.hour <= 13 %}9:00am - 1:00pm{% else %}2:00pm - 6:00pm{% endif %}
+                            </div>
+                        </div>
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <td class="checkbox-col">
+                        <span class="checkbox">{% if application.leave_type.name == "No Paid Leave" %}✓{% endif %}</span>
+                    </td>
+                    <td class="leave-type-col">
+                        <span class="leave-type">No Paid Leave</span>
+                    </td>
+                    <td class="from-col">
+                        {% if application.leave_type.name == "No Paid Leave" %}
+                        <div class="date-info">
+                            <div class="date-main">{{ application.date_from|date:"d/m/Y" }} ({{ application.date_from|date:"D" }})</div>
+                            <div class="time-info">
+                                {% if date_from_local.hour == 9 %}9:00am - 1:00pm{% else %}2:00pm - 6:00pm{% endif %}
+                            </div>
+                        </div>
+                        {% endif %}
+                    </td>
+                    <td class="to-col">
+                        {% if application.leave_type.name == "No Paid Leave" %}
+                        <div class="date-info">
+                            <div class="date-main">{{ application.date_to|date:"d/m/Y" }} ({{ application.date_to|date:"D" }})</div>
+                            <div class="time-info">
+                                {% if date_to_local.hour <= 13 %}9:00am - 1:00pm{% else %}2:00pm - 6:00pm{% endif %}
+                            </div>
+                        </div>
+                        {% endif %}
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        
+        <!-- Form Fields -->
+        <div class="form-section">
+            <div class="form-row">
+                <span class="form-label">Reason for Leave</span>
+                <div class="form-value">{{ application.reason|default:"" }}</div>
+            </div>
+            
+            <div class="form-row">
+                <span class="form-label">Date Back To Work</span>
+                <div class="form-value">
+                    {% if application.back_to_office_date %}
+                        {{ application.back_to_office_date|date:"d/m/Y" }}
+                        {% if date_from_local.hour == 9 %}
+                            (PM - 2:00pm)
+                        {% else %}
+                            (AM - 9:00am)
+                        {% endif %}
+                    {% elif date_back_to_work %}
+                        {{ date_back_to_work|date:"d/m/Y" }}
+                        {% if date_from_local.hour == 9 %}
+                            (PM - 2:00pm)
+                        {% else %}
+                            (AM - 9:00am)
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <span class="form-label">Total Leave Period</span>
+                <div class="form-value">
+                    {{ application.days_applied }} 
+                    {% if application.days_applied > 1 %}days{% else %}day{% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Optional Shaded Sections -->
+        <div class="optional-section">
+            <div class="optional-title">Special Work Time</div>
+            <div class="optional-subtitle">(Optional - Complete only if requesting special work arrangements)</div>
+            <table class="optional-table">
+                <tr>
+                    <td class="label-col">Date</td>
+                    <td></td>
+                    <td class="label-col">Time</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td class="label-col">For</td>
+                    <td colspan="3"></td>
+                </tr>
+                <tr>
+                    <td class="label-col">Approved</td>
+                    <td colspan="3"></td>
+                </tr>
+            </table>
+        </div>
+        
+        <div class="optional-section">
+            <div class="optional-title">Special Time Off(Day Off) Apply</div>
+            <div class="optional-subtitle">(Optional - Complete only if requesting special day off arrangements)</div>
+            <table class="optional-table">
+                <tr>
+                    <td class="label-col">Date</td>
+                    <td></td>
+                    <td class="label-col">Time</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td class="label-col">Approved</td>
+                    <td colspan="3"></td>
+                </tr>
+            </table>
+        </div>
+        
+        <!-- Signature Section -->
+        <div class="signature-section">
+            <div class="signature-box">
+                <div class="signature-title">Applied By</div>
+                <div class="signature-line">{{ application.user.get_full_name|default:application.user.username }}</div>
+                <div class="date-label-row">
+                    <span class="date-label">Date</span>
+                    <div class="date-line">{{ application.created_at|date:"d/m/Y" }}</div>
+                </div>
+            </div>
+            
+            <div class="signature-box">
+                <div class="signature-title">Approved By</div>
+                <div class="signature-line">
+                    {% if application.approved_by %}
+                        {{ application.approved_by.get_full_name }}
+                    {% endif %}
+                </div>
+                <div class="date-label-row">
+                    <span class="date-label">Date</span>
+                    <div class="date-line">
+                        {% if application.approved_at %}
+                            {{ application.approved_at|date:"d/m/Y" }}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        if (window.location.search.includes('print=true')) {
+            window.onload = function() {
+                window.print();
+            };
+        }
+    </script>
+</body>
+</html>

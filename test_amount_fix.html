@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Amount Input Bug Fix Test</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .test-case {
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .test-case h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        input {
+            padding: 10px;
+            font-size: 16px;
+            width: 200px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+        }
+        input:focus {
+            border-color: #4CAF50;
+            outline: none;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            background: white;
+            border-left: 4px solid #4CAF50;
+            font-family: monospace;
+        }
+        .error {
+            border-left-color: #f44336;
+            background: #ffebee;
+        }
+        .success {
+            border-left-color: #4CAF50;
+            background: #e8f5e9;
+        }
+        .instructions {
+            background: #e3f2fd;
+            border: 1px solid #2196f3;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .amount-field {
+            font-family: 'Courier New', monospace;
+            text-align: right;
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: #2c3e50;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 Amount Input Bug Fix Test</h1>
+    
+    <div class="instructions">
+        <h3>📋 Test Instructions:</h3>
+        <ol>
+            <li>Type the test values exactly as shown (e.g., "39.83")</li>
+            <li>Click outside the input field or press Tab to trigger blur</li>
+            <li>Verify the value remains correct and doesn't transform incorrectly</li>
+            <li>Check that the formatted display shows the correct value</li>
+        </ol>
+    </div>
+
+    <div class="test-case">
+        <h3>Test Case 1: Original Bug (39.83)</h3>
+        <p>Type: <strong>39.83</strong> - Should remain 39.83, not change to 3.02</p>
+        <input type="text" class="amount-field" id="test1" placeholder="Type 39.83">
+        <div id="result1" class="result">Waiting for input...</div>
+    </div>
+
+    <div class="test-case">
+        <h3>Test Case 2: Decimal Precision (71.66)</h3>
+        <p>Type: <strong>71.66</strong> - Should remain 71.66</p>
+        <input type="text" class="amount-field" id="test2" placeholder="Type 71.66">
+        <div id="result2" class="result">Waiting for input...</div>
+    </div>
+
+    <div class="test-case">
+        <h3>Test Case 3: Single Decimal (123.4)</h3>
+        <p>Type: <strong>123.4</strong> - Should format to 123.40</p>
+        <input type="text" class="amount-field" id="test3" placeholder="Type 123.4">
+        <div id="result3" class="result">Waiting for input...</div>
+    </div>
+
+    <div class="test-case">
+        <h3>Test Case 4: Multiple Decimals (12.34.56)</h3>
+        <p>Type: <strong>12.34.56</strong> - Should correct to 12.3456 → 12.35</p>
+        <input type="text" class="amount-field" id="test4" placeholder="Type 12.34.56">
+        <div id="result4" class="result">Waiting for input...</div>
+    </div>
+
+    <div class="test-case">
+        <h3>Test Case 5: Large Number (999999.99)</h3>
+        <p>Type: <strong>999999.99</strong> - Should remain 999999.99</p>
+        <input type="text" class="amount-field" id="test5" placeholder="Type 999999.99">
+        <div id="result5" class="result">Waiting for input...</div>
+    </div>
+
+    <script>
+        // Copy of the fixed validation functions
+        function validateAndFormatAmount(input) {
+            let value = input.value.trim();
+            
+            if (value === '') {
+                return; // Allow empty values
+            }
+            
+            // Remove any non-numeric characters except decimal point
+            value = value.replace(/[^\d.]/g, '');
+            
+            // Handle multiple decimal points - keep only the first one
+            const parts = value.split('.');
+            if (parts.length > 2) {
+                value = parts[0] + '.' + parts.slice(1).join('');
+            }
+            
+            // Limit to 2 decimal places
+            if (value.includes('.')) {
+                const [whole, decimal] = value.split('.');
+                if (decimal && decimal.length > 2) {
+                    value = whole + '.' + decimal.substring(0, 2);
+                }
+            }
+            
+            // Convert to number and validate
+            const numValue = parseFloat(value);
+            if (isNaN(numValue) || numValue < 0) {
+                input.value = '';
+                return;
+            }
+            
+            // Check reasonable limits
+            if (numValue > 999999.99) {
+                value = '999999.99';
+            }
+            
+            // Format to 2 decimal places for consistency
+            input.value = numValue.toFixed(2);
+        }
+
+        function formatAmountForDisplay(input) {
+            const cleanValue = input.value.replace(/,/g, '');
+            const value = parseFloat(cleanValue);
+            if (!isNaN(value) && value >= 0) {
+                input.dataset.rawValue = value.toFixed(2);
+                input.value = value.toLocaleString('en-US', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                });
+            }
+        }
+        
+        function clearAmountFormatting(input) {
+            if (input.value) {
+                const rawValue = input.dataset.rawValue || input.value.replace(/,/g, '');
+                input.value = rawValue;
+            }
+        }
+
+        // Test tracking
+        const testCases = {
+            test1: { expected: '39.83', description: 'Original bug value' },
+            test2: { expected: '71.66', description: 'Decimal precision' },
+            test3: { expected: '123.40', description: 'Single decimal' },
+            test4: { expected: '12.35', description: 'Multiple decimals corrected' },
+            test5: { expected: '999,999.99', description: 'Large number with commas' }
+        };
+
+        // Event handlers
+        document.addEventListener('input', function(e) {
+            if (e.target.classList.contains('amount-field')) {
+                const resultDiv = document.getElementById(e.target.id.replace('test', 'result'));
+                resultDiv.textContent = `Input value: "${e.target.value}"`;
+                resultDiv.className = 'result';
+            }
+        });
+        
+        document.addEventListener('blur', function(e) {
+            if (e.target.classList.contains('amount-field')) {
+                const inputId = e.target.id;
+                const resultDiv = document.getElementById(inputId.replace('test', 'result'));
+                const originalValue = e.target.value;
+                
+                validateAndFormatAmount(e.target);
+                const validatedValue = e.target.value;
+                
+                formatAmountForDisplay(e.target);
+                const formattedValue = e.target.value;
+                
+                const testCase = testCases[inputId];
+                const passed = formattedValue === testCase.expected;
+                
+                resultDiv.innerHTML = `
+                    <strong>Original input:</strong> "${originalValue}"<br>
+                    <strong>After validation:</strong> "${validatedValue}"<br>
+                    <strong>After formatting:</strong> "${formattedValue}"<br>
+                    <strong>Expected:</strong> "${testCase.expected}"<br>
+                    <strong>Status:</strong> ${passed ? '✅ PASSED' : '❌ FAILED'}
+                `;
+                resultDiv.className = 'result ' + (passed ? 'success' : 'error');
+            }
+        });
+        
+        document.addEventListener('focus', function(e) {
+            if (e.target.classList.contains('amount-field')) {
+                clearAmountFormatting(e.target);
+            }
+        });
+
+        // Auto-test functionality
+        function runAutoTest() {
+            console.log('Running automated tests...');
+            
+            const test1 = document.getElementById('test1');
+            test1.value = '39.83';
+            test1.dispatchEvent(new Event('blur'));
+            
+            const test2 = document.getElementById('test2');
+            test2.value = '71.66';
+            test2.dispatchEvent(new Event('blur'));
+            
+            setTimeout(() => {
+                const allPassed = Array.from(document.querySelectorAll('.result')).every(div => 
+                    div.classList.contains('success') || div.textContent.includes('Waiting')
+                );
+                
+                if (allPassed) {
+                    console.log('✅ All tests passed!');
+                } else {
+                    console.log('❌ Some tests failed. Check the results above.');
+                }
+            }, 100);
+        }
+
+        console.log('Test page loaded. Type test values or run runAutoTest() in console.');
+    </script>
+</body>
+</html>

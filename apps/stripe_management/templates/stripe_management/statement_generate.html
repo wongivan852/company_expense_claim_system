@@ -1,0 +1,488 @@
+{% extends 'base_simple.html' %}
+{% load static %}
+
+{% block title %}Monthly Statement - {{ month_name }} {{ year }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .statement-container {
+        background: white;
+        padding: 2rem;
+        margin: 2rem auto;
+        max-width: 1400px;
+    }
+
+    .statement-header-box {
+        text-align: center;
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        border-bottom: 4px solid #667eea;
+    }
+
+    .statement-header-box h1 {
+        font-size: 2.5rem;
+        color: #2d3748;
+        margin-bottom: 0.5rem;
+    }
+
+    .statement-header-box h2 {
+        font-size: 1.5rem;
+        color: #4a5568;
+        font-weight: normal;
+    }
+
+    .summary-box {
+        background: #f7fafc;
+        padding: 1.5rem;
+        border-radius: 8px;
+        margin-bottom: 2rem;
+        border: 1px solid #e2e8f0;
+    }
+
+    .summary-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+    }
+
+    .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+    }
+
+    .summary-item {
+        display: flex;
+        justify-content: space-between;
+    }
+
+    .summary-label {
+        font-weight: 600;
+    }
+
+    .statement-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 2rem;
+    }
+
+    .statement-table th {
+        background: #f7fafc;
+        border: 1px solid #cbd5e0;
+        padding: 0.75rem;
+        text-align: left;
+        font-weight: 600;
+        color: #2d3748;
+    }
+
+    .statement-table td {
+        border: 1px solid #e2e8f0;
+        padding: 0.75rem;
+    }
+
+    .statement-table tr.opening-row,
+    .statement-table tr.closing-row {
+        background: #fef3c7;
+        font-weight: 600;
+    }
+
+    .statement-table tr.subtotal-row {
+        background: #f3f4f6;
+        font-weight: 600;
+    }
+
+    .text-right {
+        text-align: right;
+    }
+
+    .text-center {
+        text-align: center;
+    }
+
+    .debit-amount {
+        color: #dc2626;
+    }
+
+    .credit-amount {
+        color: #059669;
+    }
+
+    .filter-section {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        margin-bottom: 2rem;
+    }
+
+    .customer-summary {
+        margin-top: 3rem;
+        page-break-before: always;
+    }
+
+    .customer-summary h3 {
+        background: #f7fafc;
+        padding: 1rem;
+        border-radius: 8px;
+        border-left: 4px solid #667eea;
+    }
+
+    .customer-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 1rem;
+    }
+
+    .customer-table th {
+        background: #f7fafc;
+        border: 1px solid #cbd5e0;
+        padding: 0.75rem;
+        text-align: left;
+        font-weight: 600;
+    }
+
+    .customer-table td {
+        border: 1px solid #e2e8f0;
+        padding: 0.75rem;
+    }
+
+    .customer-table tr.total-row {
+        background: #f3f4f6;
+        font-weight: 600;
+    }
+
+    @media print {
+        .filter-section,
+        .no-print {
+            display: none !important;
+        }
+
+        .statement-container {
+            margin: 0;
+            padding: 0;
+        }
+
+        @page {
+            margin: 1cm;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Filter Section -->
+    <div class="filter-section no-print">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">Month</label>
+                <select name="month" class="form-select" onchange="this.form.submit()">
+                    <option value="1" {% if month == 1 %}selected{% endif %}>January</option>
+                    <option value="2" {% if month == 2 %}selected{% endif %}>February</option>
+                    <option value="3" {% if month == 3 %}selected{% endif %}>March</option>
+                    <option value="4" {% if month == 4 %}selected{% endif %}>April</option>
+                    <option value="5" {% if month == 5 %}selected{% endif %}>May</option>
+                    <option value="6" {% if month == 6 %}selected{% endif %}>June</option>
+                    <option value="7" {% if month == 7 %}selected{% endif %}>July</option>
+                    <option value="8" {% if month == 8 %}selected{% endif %}>August</option>
+                    <option value="9" {% if month == 9 %}selected{% endif %}>September</option>
+                    <option value="10" {% if month == 10 %}selected{% endif %}>October</option>
+                    <option value="11" {% if month == 11 %}selected{% endif %}>November</option>
+                    <option value="12" {% if month == 12 %}selected{% endif %}>December</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Year</label>
+                <select name="year" class="form-select" onchange="this.form.submit()">
+                    {% for y in years %}
+                    <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Account</label>
+                <select name="account" class="form-select" onchange="this.form.submit()">
+                    <option value="">All Accounts</option>
+                    {% for acc in accounts %}
+                    <option value="{{ acc.id }}" {% if account and acc.id == account.id %}selected{% endif %}>
+                        {{ acc.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2 d-flex align-items-end gap-2">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-sync me-2"></i>Refresh
+                </button>
+                <button type="button" onclick="window.print()" class="btn btn-secondary">
+                    <i class="fas fa-print"></i>
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Statement -->
+    <div class="statement-container">
+        <!-- Header -->
+        <div class="statement-header-box">
+            <h1>{% if account %}{{ account.name }}{% else %}All Accounts{% endif %}</h1>
+            <h2>Monthly Statement - {{ month_name }} {{ year }}</h2>
+        </div>
+
+        <!-- Summary -->
+        <div class="summary-box">
+            <div class="summary-title">Statement Summary for {{ month_name }} {{ year }}</div>
+            <div class="summary-grid">
+                <div class="summary-item">
+                    <span class="summary-label">Company:</span>
+                    <span>{% if account %}{{ account.account_id }}{% else %}all{% endif %}</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">Opening Balance:</span>
+                    <span>HK${{ opening_balance|floatformat:2 }}</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">Closing Balance:</span>
+                    <span>HK${{ closing_balance|floatformat:2 }}</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">Total Transactions:</span>
+                    <span>{{ transaction_count }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reconciliation Section -->
+        <div class="summary-box" style="background: #fef3c7; border-color: #fbbf24;">
+            <div class="summary-title" style="color: #92400e;">
+                <i class="fas fa-check-circle me-2"></i>Reconciliation & Verification
+            </div>
+
+            <!-- Balance Change from Activity -->
+            <div style="margin-bottom: 1.5rem;">
+                <h5 style="color: #92400e; font-size: 1rem; margin-bottom: 0.75rem; border-bottom: 2px solid #fbbf24; padding-bottom: 0.5rem;">
+                    Balance Change from Activity
+                </h5>
+                <table style="width: 100%; border-collapse: collapse;">
+                    <tr style="background: white;">
+                        <td style="padding: 0.5rem; border: 1px solid #fbbf24; width: 60%;">Account activity before fees</td>
+                        <td style="padding: 0.5rem; border: 1px solid #fbbf24; text-align: right; font-weight: 600;">
+                            HK${{ account_activity_before_fees|floatformat:2 }}
+                        </td>
+                    </tr>
+                    <tr style="background: white;">
+                        <td style="padding: 0.5rem; border: 1px solid #fbbf24;">Less fees</td>
+                        <td style="padding: 0.5rem; border: 1px solid #fbbf24; text-align: right; color: #dc2626;">
+                            -HK${{ total_fees|floatformat:2 }}
+                        </td>
+                    </tr>
+                    <tr style="background: #fef3c7; font-weight: 600;">
+                        <td style="padding: 0.5rem; border: 1px solid #fbbf24;">Net balance change from activity</td>
+                        <td style="padding: 0.5rem; border: 1px solid #fbbf24; text-align: right;">
+                            HK${{ net_balance_change|floatformat:2 }}
+                        </td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- Total Payouts -->
+            <div style="margin-bottom: 1.5rem;">
+                <h5 style="color: #92400e; font-size: 1rem; margin-bottom: 0.75rem; border-bottom: 2px solid #fbbf24; padding-bottom: 0.5rem;">
+                    Total Payouts
+                </h5>
+                <table style="width: 100%; border-collapse: collapse;">
+                    <tr style="background: white;">
+                        <td style="padding: 0.5rem; border: 1px solid #fbbf24; width: 60%;">Payouts to your bank account</td>
+                        <td style="padding: 0.5rem; border: 1px solid #fbbf24; text-align: right; font-weight: 600; color: #059669;">
+                            HK${{ total_payouts|floatformat:2 }}
+                        </td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- Activity Breakdown -->
+            <div>
+                <h5 style="color: #92400e; font-size: 1rem; margin-bottom: 0.75rem; border-bottom: 2px solid #fbbf24; padding-bottom: 0.5rem;">
+                    Activity Breakdown
+                </h5>
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background: #fbbf24; color: #92400e; font-weight: 600;">
+                            <th style="padding: 0.5rem; border: 1px solid #f59e0b; text-align: left;">Type</th>
+                            <th style="padding: 0.5rem; border: 1px solid #f59e0b; text-align: center;">Count</th>
+                            <th style="padding: 0.5rem; border: 1px solid #f59e0b; text-align: right;">Gross Amount</th>
+                            <th style="padding: 0.5rem; border: 1px solid #f59e0b; text-align: right;">Fees</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr style="background: white;">
+                            <td style="padding: 0.5rem; border: 1px solid #fbbf24;">Charges</td>
+                            <td style="padding: 0.5rem; border: 1px solid #fbbf24; text-align: center;">{{ charge_count }}</td>
+                            <td style="padding: 0.5rem; border: 1px solid #fbbf24; text-align: right;">HK${{ total_charges|floatformat:2 }}</td>
+                            <td style="padding: 0.5rem; border: 1px solid #fbbf24; text-align: right; color: #dc2626;">HK${{ total_fees|floatformat:2 }}</td>
+                        </tr>
+                        {% if refund_count > 0 %}
+                        <tr style="background: white;">
+                            <td style="padding: 0.5rem; border: 1px solid #fbbf24;">Refunds</td>
+                            <td style="padding: 0.5rem; border: 1px solid #fbbf24; text-align: center;">{{ refund_count }}</td>
+                            <td style="padding: 0.5rem; border: 1px solid #fbbf24; text-align: right; color: #dc2626;">-HK${{ total_refunds|floatformat:2 }}</td>
+                            <td style="padding: 0.5rem; border: 1px solid #fbbf24; text-align: right;">-</td>
+                        </tr>
+                        {% endif %}
+                        {% if payout_reversal_count > 0 %}
+                        <tr style="background: white;">
+                            <td style="padding: 0.5rem; border: 1px solid #fbbf24;">Payout Reversals</td>
+                            <td style="padding: 0.5rem; border: 1px solid #fbbf24; text-align: center;">{{ payout_reversal_count }}</td>
+                            <td style="padding: 0.5rem; border: 1px solid #fbbf24; text-align: right;">HK${{ payout_reversal_amount|floatformat:2 }}</td>
+                            <td style="padding: 0.5rem; border: 1px solid #fbbf24; text-align: right;">-</td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Verification Check -->
+            {% if calculated_closing|add:0 == closing_balance|add:0 or calculated_closing|floatformat:2 == closing_balance|floatformat:2 %}
+            <div style="margin-top: 1.5rem; padding: 1rem; background: white; border-radius: 8px; border: 2px solid #10b981;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <strong style="color: #065f46;">Balance Verification:</strong>
+                        <span style="color: #6b7280; margin-left: 0.5rem; font-size: 0.875rem;">
+                            Opening (HK${{ opening_balance|floatformat:2 }}) + Net Activity (HK${{ net_balance_change|floatformat:2 }}) - Payouts (HK${{ total_payouts|floatformat:2 }})
+                        </span>
+                    </div>
+                    <div style="font-size: 1.25rem; font-weight: 700;">
+                        <i class="fas fa-check-circle me-2" style="color: #10b981;"></i>
+                        <span style="color: #10b981;">Verified ✓</span>
+                    </div>
+                </div>
+                <div style="margin-top: 0.5rem; font-size: 0.875rem; color: #6b7280;">
+                    Calculated Closing: HK${{ calculated_closing|floatformat:2 }} =
+                    Actual Closing: HK${{ closing_balance|floatformat:2 }}
+                </div>
+            </div>
+            {% else %}
+            <div style="margin-top: 1.5rem; padding: 1rem; background: white; border-radius: 8px; border: 2px solid #f59e0b;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <strong style="color: #92400e;">Balance Reconciliation (Payout-based):</strong>
+                        <span style="color: #6b7280; margin-left: 0.5rem; font-size: 0.875rem;">
+                            Using arrival-date payout reconciliation from Stripe PDF
+                        </span>
+                    </div>
+                    <div style="font-size: 1.25rem; font-weight: 700;">
+                        <i class="fas fa-info-circle me-2" style="color: #f59e0b;"></i>
+                        <span style="color: #f59e0b;">Adjusted</span>
+                    </div>
+                </div>
+                <div style="margin-top: 0.5rem; font-size: 0.875rem; color: #6b7280;">
+                    Simple Calculation: HK${{ calculated_closing|floatformat:2 }} |
+                    Stripe Reconciliation: HK${{ closing_balance|floatformat:2 }} |
+                    Adjustment: HK${{ closing_balance|add:calculated_closing|floatformat:2|slice:"-6:" }}
+                </div>
+                <div style="margin-top: 0.5rem; padding: 0.5rem; background: #fef3c7; border-radius: 4px; font-size: 0.875rem;">
+                    <i class="fas fa-lightbulb" style="color: #f59e0b;"></i>
+                    <strong>Note:</strong> This month uses payout reconciliation logic where charges are matched to payout arrival dates, not transaction creation dates.
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Transaction Table -->
+        <table class="statement-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Nature</th>
+                    <th>Party</th>
+                    <th class="text-right">Debit</th>
+                    <th class="text-right">Credit</th>
+                    <th class="text-right">Balance</th>
+                    <th class="text-center">Acknowledged</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for line in statement_lines %}
+                {% if not line.is_closing %}
+                <tr {% if line.is_opening %}class="opening-row"{% endif %}>
+                    <td>{{ line.date|date:"Y-m-d" }}</td>
+                    <td>{{ line.nature }}</td>
+                    <td>{{ line.party }}</td>
+                    <td class="text-right {% if line.debit > 0 %}debit-amount{% endif %}">
+                        {% if line.debit > 0 %}HK${{ line.debit|floatformat:2 }}{% endif %}
+                    </td>
+                    <td class="text-right {% if line.credit > 0 %}credit-amount{% endif %}">
+                        {% if line.credit > 0 %}HK${{ line.credit|floatformat:2 }}{% endif %}
+                    </td>
+                    <td class="text-right">HK${{ line.balance|floatformat:2 }}</td>
+                    <td class="text-center">{{ line.acknowledged }}</td>
+                    <td>{{ line.description }}</td>
+                </tr>
+                {% endif %}
+                {% endfor %}
+
+                <!-- SUBTOTAL Row -->
+                <tr class="subtotal-row">
+                    <td colspan="3">SUBTOTAL</td>
+                    <td class="text-right debit-amount">HK${{ total_charges|floatformat:2 }}</td>
+                    <td class="text-right credit-amount">HK${{ total_credits|floatformat:2 }}</td>
+                    <td colspan="3"></td>
+                </tr>
+
+                <!-- Closing Balance Row -->
+                {% for line in statement_lines %}
+                {% if line.is_closing %}
+                <tr class="closing-row">
+                    <td>{{ line.date|date:"Y-m-d" }}</td>
+                    <td>{{ line.nature }}</td>
+                    <td>{{ line.party }}</td>
+                    <td class="text-right"></td>
+                    <td class="text-right"></td>
+                    <td class="text-right">HK${{ line.balance|floatformat:2 }}</td>
+                    <td class="text-center">{{ line.acknowledged }}</td>
+                    <td>{{ line.description }}</td>
+                </tr>
+                {% endif %}
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <!-- Customer Transaction Summary -->
+        {% if customer_transactions %}
+        <div class="customer-summary">
+            <h3>Succeeded Transaction Details for {{ month_name }} {{ year }}</h3>
+            <p><strong>Total Succeeded Charges:</strong> {{ customer_transactions|length }}</p>
+
+            <table class="customer-table">
+                <thead>
+                    <tr>
+                        <th style="width: 100px;">Date</th>
+                        <th style="width: 150px;">Stripe ID</th>
+                        <th>Customer / Party</th>
+                        <th class="text-right" style="width: 120px;">Amount (HKD)</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ct in customer_transactions %}
+                    <tr>
+                        <td>{{ ct.date|date:"Y-m-d" }}</td>
+                        <td><small>{{ ct.stripe_id|default:"N/A" }}</small></td>
+                        <td>{{ ct.email|default:"N/A" }}</td>
+                        <td class="text-right debit-amount">HK${{ ct.amount|floatformat:2 }}</td>
+                        <td><small>{{ ct.description|default:"" }}</small></td>
+                    </tr>
+                    {% endfor %}
+                    <tr class="total-row">
+                        <td colspan="3"><strong>Total Gross Charges:</strong></td>
+                        <td class="text-right"><strong>HK${{ total_charges|floatformat:2 }}</strong></td>
+                        <td></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

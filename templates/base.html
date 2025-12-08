@@ -38,18 +38,18 @@
                     </li>
                     {% if user.is_authenticated %}
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'claims:claim_list' %}">
+                        <a class="nav-link" href="{% url 'expense_claims:claim_list' %}">
                             <i class="fas fa-file-invoice-dollar"></i> My Claims
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'claims:claim_create' %}">
+                        <a class="nav-link" href="{% url 'expense_claims:claim_create' %}">
                             <i class="fas fa-plus-circle"></i> New Claim
                         </a>
                     </li>
                     {% if user.is_staff or user.user_role == 'manager' %}
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'claims:pending_approvals' %}">
+                        <a class="nav-link" href="{% url 'expense_claims:pending_approvals' %}">
                             <i class="fas fa-check-circle"></i> Approvals
                         </a>
                     </li>

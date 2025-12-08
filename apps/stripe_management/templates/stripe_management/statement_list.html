@@ -1,0 +1,29 @@
+{% extends 'base_simple.html' %}
+
+{% block title %}Monthly Statements{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="mb-0"><i class="fas fa-file-invoice me-2"></i>Monthly Statements</h1>
+        <a href="{% url 'stripe_management:statement_generate' %}" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i>Generate Statement
+        </a>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <p class="mb-3">Generate and view monthly statements for your Stripe accounts.</p>
+
+            <div class="d-flex gap-2">
+                <a href="{% url 'stripe_management:statement_generate' %}" class="btn btn-success">
+                    <i class="fas fa-file-invoice-dollar me-2"></i>Generate New Statement
+                </a>
+                <a href="{% url 'admin:stripe_management_monthlystatement_changelist' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-cog me-2"></i>Manage in Admin
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

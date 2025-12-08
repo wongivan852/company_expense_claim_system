@@ -35,20 +35,20 @@
                                 <i class="fas fa-print me-2"></i>Print Options
                             </button>
                             <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="{% url 'claims:print_claim' claim.id %}" target="_blank">
+                                <li><a class="dropdown-item" href="{% url 'expense_claims:print_claim' claim.id %}" target="_blank">
                                     <i class="fas fa-file-text me-2"></i>Summary Only
                                 </a></li>
-                                <li><a class="dropdown-item" href="{% url 'claims:print_claim_receipts' claim.id %}" target="_blank">
+                                <li><a class="dropdown-item" href="{% url 'expense_claims:print_claim_receipts' claim.id %}" target="_blank">
                                     <i class="fas fa-images me-2"></i>With Receipt Images
                                 </a></li>
                             </ul>
                         </div>
                         {% if claim.claimant == request.user and claim.status == 'draft' %}
-                        <a href="{% url 'claims:claim_edit' claim.id %}" class="btn btn-primary btn-sm">
+                        <a href="{% url 'expense_claims:claim_edit' claim.id %}" class="btn btn-primary btn-sm">
                             <i class="fas fa-edit me-2"></i>Edit Claim
                         </a>
                         {% if can_delete_claim %}
-                        <a href="{% url 'claims:claim_delete' claim.id %}" class="btn btn-outline-danger btn-sm">
+                        <a href="{% url 'expense_claims:claim_delete' claim.id %}" class="btn btn-outline-danger btn-sm">
                             <i class="fas fa-trash me-2"></i>Delete Draft
                         </a>
                         {% endif %}
@@ -198,7 +198,7 @@
                 <div class="card-body">
                     {% if claim.claimant == request.user %}
                         {% if claim.status == 'draft' %}
-                        <a href="{% url 'claims:claim_edit' claim.id %}" class="btn btn-primary btn-block mb-2">
+                        <a href="{% url 'expense_claims:claim_edit' claim.id %}" class="btn btn-primary btn-block mb-2">
                             <i class="fas fa-edit me-2"></i>Edit Claim
                         </a>
                         <form method="post" style="display: inline-block;" class="w-100 mb-2">
@@ -209,7 +209,7 @@
                             </button>
                         </form>
                         {% elif claim.status == 'rejected' %}
-                        <a href="{% url 'claims:claim_edit' claim.id %}" class="btn btn-warning btn-block mb-2">
+                        <a href="{% url 'expense_claims:claim_edit' claim.id %}" class="btn btn-warning btn-block mb-2">
                             <i class="fas fa-redo me-2"></i>Revise & Resubmit
                         </a>
                         {% endif %}
@@ -228,7 +228,7 @@
                     </button>
                     {% endif %}
 
-                    <a href="{% url 'claims:claim_list' %}" class="btn btn-outline-secondary btn-block">
+                    <a href="{% url 'expense_claims:claim_list' %}" class="btn btn-outline-secondary btn-block">
                         <i class="fas fa-arrow-left me-2"></i>Back to Claims
                     </a>
                 </div>

@@ -110,7 +110,7 @@
                     Create New Expense Claim
                 {% endif %}
             </h1>
-            <a href="{% url 'claims:claim_list' %}" class="btn btn-outline-secondary">
+            <a href="{% url 'expense_claims:claim_list' %}" class="btn btn-outline-secondary">
                 <i class="fas fa-arrow-left"></i> Back to Claims
             </a>
         </div>
@@ -166,7 +166,8 @@
                                 </label>
                                 <div class="row g-2">
                                     <div class="col-7">
-                                        <select name="expense_month" id="expense-month" class="form-select" required>
+                                        <select name="expense_month" id="expense-month" class="form-select" required
+                                        data-existing-period="{{ claim.period_from|date:'Y-m'|default:'' }}">
                                             <option value="">-- Select Month --</option>
                                             <option value="2024-01">January 2024</option>
                                             <option value="2024-02">February 2024</option>
@@ -188,7 +189,7 @@
                                             <option value="2025-06">June 2025</option>
                                             <option value="2025-07">July 2025</option>
                                             <option value="2025-08">August 2025</option>
-                                            <option value="2025-09" selected>September 2025</option>
+                                            <option value="2025-09">September 2025</option>
                                             <option value="2025-10">October 2025</option>
                                             <option value="2025-11">November 2025</option>
                                             <option value="2025-12">December 2025</option>
@@ -310,20 +311,20 @@
                                             <label class="form-label">💰 Amount (Fixed) <span class="text-danger">*</span></label>
                                             <div class="input-group">
                                                 <span class="input-group-text currency-symbol">{{ item.currency.symbol }}</span>
-                                                <input type="text" name="expense_items[{{ forloop.counter0 }}][amount]" 
-                                                       class="form-control decimal-input-safe" 
+                                                <input type="text" name="expense_items[{{ forloop.counter0 }}][amount]"
+                                                       class="form-control decimal-input-safe"
                                                        required
                                                        value="{{ item.original_amount }}"
                                                        placeholder="0.00"
-                                                       pattern="[0-9]+(\.[0-9]{1,2})?"
+                                                       pattern="-?[0-9]+(\.[0-9]{1,2})?"
                                                        inputmode="decimal"
                                                        data-original-amount="{{ item.original_amount }}"
-                                                       title="Enter amount (e.g., 123.45)"
+                                                       title="Enter amount (e.g., 123.45 or -50.00 for returns)"
                                                        autocomplete="off">
                                             </div>
                                             <div class="form-text">
                                                 <i class="fas fa-info-circle text-success"></i>
-                                                🎯 FIXED: Enter amount (e.g., 123.45) - No more jumping cursor!
+                                                🎯 Enter amount (e.g., 123.45 or -50.00 for returns)
                                             </div>
                                         </div>
                                     </div>
@@ -332,8 +333,8 @@
                                             <label class="form-label">HKD Equivalent</label>
                                             <div class="input-group">
                                                 <span class="input-group-text">HK$</span>
-                                                <input type="number" class="form-control hkd-equivalent" 
-                                                       readonly 
+                                                <input type="number" class="form-control hkd-equivalent"
+                                                       readonly
                                                        value="{{ item.amount_hkd }}"
                                                        placeholder="0.00"
                                                        title="Automatically calculated HKD amount">
@@ -440,19 +441,19 @@
                                             <label class="form-label">💰 Amount (Fixed) <span class="text-danger">*</span></label>
                                             <div class="input-group">
                                                 <span class="input-group-text currency-symbol">$</span>
-                                                <input type="text" name="expense_items[0][amount]" 
-                                                       class="form-control decimal-input-safe" 
+                                                <input type="text" name="expense_items[0][amount]"
+                                                       class="form-control decimal-input-safe"
                                                        required
                                                        placeholder="0.00"
-                                                       pattern="[0-9]+(\.[0-9]{1,2})?"
+                                                       pattern="-?[0-9]+(\.[0-9]{1,2})?"
                                                        inputmode="decimal"
                                                        data-original-amount=""
-                                                       title="Enter amount (e.g., 123.45)"
+                                                       title="Enter amount (e.g., 123.45 or -50.00 for returns)"
                                                        autocomplete="off">
                                             </div>
                                             <div class="form-text">
                                                 <i class="fas fa-info-circle text-success"></i>
-                                                🎯 FIXED: Enter amount (e.g., 123.45) - No more jumping cursor!
+                                                🎯 Enter amount (e.g., 123.45 or -50.00 for returns)
                                             </div>
                                         </div>
                                     </div>
@@ -461,8 +462,8 @@
                                             <label class="form-label">HKD Equivalent</label>
                                             <div class="input-group">
                                                 <span class="input-group-text">HK$</span>
-                                                <input type="number" class="form-control hkd-equivalent" 
-                                                       readonly 
+                                                <input type="number" class="form-control hkd-equivalent"
+                                                       readonly
                                                        placeholder="0.00"
                                                        title="Automatically calculated HKD amount">
                                             </div>
@@ -470,12 +471,12 @@
                                         </div>
                                     </div>
                                 </div>
-                                
+
                                 <div class="row">
                                     <div class="col-md-6">
                                         <div class="mb-3">
                                             <label class="form-label">Date of Occurrence <span class="text-danger">*</span></label>
-                                            <input type="date" name="expense_items[0][expense_date]" 
+                                            <input type="date" name="expense_items[0][expense_date]"
                                                    class="form-control" required
                                                    title="When did this expense occur?">
                                             <div class="form-text">Specific date when this expense occurred</div>
@@ -564,7 +565,7 @@
                             </button>
                         </div>
                         <div>
-                            <a href="{% url 'claims:claim_list' %}" class="btn btn-outline-dark me-2">
+                            <a href="{% url 'expense_claims:claim_list' %}" class="btn btn-outline-dark me-2">
                                 <i class="fas fa-times"></i> Cancel
                             </a>
                             <button type="submit" name="action" value="submit" class="btn btn-primary btn-lg">
@@ -633,19 +634,19 @@
                     <label class="form-label">Amount <span class="text-danger">*</span></label>
                     <div class="input-group">
                         <span class="input-group-text currency-symbol">$</span>
-                        <input type="text" name="expense_items[INDEX][amount]" 
-                               class="form-control decimal-input-safe" 
+                        <input type="text" name="expense_items[INDEX][amount]"
+                               class="form-control decimal-input-safe"
                                required
                                placeholder="0.00"
-                               pattern="[0-9]+(\.[0-9]{1,2})?"
+                               pattern="-?[0-9]+(\.[0-9]{1,2})?"
                                inputmode="decimal"
                                data-original-amount=""
-                               title="Enter amount (e.g., 123.45)"
+                               title="Enter amount (e.g., 123.45 or -50.00 for returns)"
                                autocomplete="off">
                     </div>
                     <div class="form-text">
                         <i class="fas fa-info-circle text-primary"></i>
-                        Type numbers only, decimals auto-format
+                        Enter amount (e.g., 123.45 or -50.00 for returns)
                     </div>
                 </div>
             </div>
@@ -771,20 +772,27 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function validateAndFormatAmount(input) {
         let value = input.value.trim();
-        
+
         if (value === '') {
             return; // Allow empty values
         }
-        
-        // Remove any non-numeric characters except decimal point
-        value = value.replace(/[^\d.]/g, '');
-        
-        // Handle multiple decimal points - keep only the first one
-        const parts = value.split('.');
-        if (parts.length > 2) {
-            value = parts[0] + '.' + parts.slice(1).join('');
+
+        // Remove any non-numeric characters except decimal point and minus sign
+        value = value.replace(/[^\d.\-]/g, '');
+
+        // Handle minus sign - only allow at the beginning
+        const isNegative = value.startsWith('-');
+        value = value.replace(/-/g, '');
+        if (isNegative) {
+            value = '-' + value;
         }
-        
+
+        // Handle multiple decimal points - keep only the first one
+        const parts = value.replace('-', '').split('.');
+        if (parts.length > 2) {
+            value = (isNegative ? '-' : '') + parts[0] + '.' + parts.slice(1).join('');
+        }
+
         // Limit to 2 decimal places
         if (value.includes('.')) {
             const [whole, decimal] = value.split('.');
@@ -792,24 +800,24 @@ document.addEventListener('DOMContentLoaded', function() {
                 value = whole + '.' + decimal.substring(0, 2);
             }
         }
-        
+
         // Convert to number and validate
         const numValue = parseFloat(value);
-        if (isNaN(numValue) || numValue < 0) {
-            showAmountFeedback(input, '❌ Please enter a valid amount', 'error');
+        if (isNaN(numValue) || numValue === 0) {
+            showAmountFeedback(input, '❌ Please enter a valid amount (negative allowed for returns)', 'error');
             input.value = '';
             return;
         }
-        
-        // Check reasonable limits
-        if (numValue > 999999.99) {
+
+        // Check reasonable limits (absolute value)
+        if (Math.abs(numValue) > 999999.99) {
             showAmountFeedback(input, '💰 Maximum amount: $999,999.99', 'info');
-            value = '999999.99';
+            value = numValue > 0 ? '999999.99' : '-999999.99';
         }
-        
+
         // Format to 2 decimal places for consistency
         input.value = numValue.toFixed(2);
-        
+
         // Update HKD equivalent after validation
         const expenseItem = input.closest('.expense-item');
         if (expenseItem) {
@@ -1054,12 +1062,12 @@ document.addEventListener('DOMContentLoaded', function() {
             isValid = false;
         }
         
-        // Validate amount fields (both new and old classes)
+        // Validate amount fields (both new and old classes) - allows negative for returns
         const amountFields = document.querySelectorAll('.decimal-input-safe, .amount-field');
         amountFields.forEach(field => {
             const value = parseFloat(field.value);
-            if (isNaN(value) || value <= 0) {
-                field.setCustomValidity('Please enter a valid amount');
+            if (isNaN(value) || value === 0) {
+                field.setCustomValidity('Please enter a valid amount (negative allowed for returns)');
                 isValid = false;
             } else {
                 field.setCustomValidity('');
@@ -1089,23 +1097,22 @@ document.addEventListener('DOMContentLoaded', function() {
     const periodFromHidden = document.getElementById('period-from-hidden');
     const periodToHidden = document.getElementById('period-to-hidden');
     const periodDisplay = document.getElementById('period-display');
-    
+
     if (monthSelect) {
-        monthSelect.addEventListener('change', function() {
-            const selectedValue = this.value;
+        // Function to update period display based on selected month
+        function updatePeriodFromMonth(selectedValue) {
             if (selectedValue) {
                 const [year, month] = selectedValue.split('-');
-                const firstDay = new Date(parseInt(year), parseInt(month) - 1, 1);
                 const lastDay = new Date(parseInt(year), parseInt(month), 0);
-                
+
                 // Format dates without timezone issues
                 const firstDayStr = `${year}-${month.padStart(2, '0')}-01`;
                 const lastDayStr = `${year}-${month.padStart(2, '0')}-${lastDay.getDate().toString().padStart(2, '0')}`;
-                
+
                 // Update hidden fields
                 periodFromHidden.value = firstDayStr;
                 periodToHidden.value = lastDayStr;
-                
+
                 // Update display
                 const monthNames = [
                     'January', 'February', 'March', 'April', 'May', 'June',
@@ -1118,11 +1125,27 @@ document.addEventListener('DOMContentLoaded', function() {
                 periodToHidden.value = '';
                 periodDisplay.value = '';
             }
+        }
+
+        monthSelect.addEventListener('change', function() {
+            updatePeriodFromMonth(this.value);
         });
-        
-        // Initialize with current selection
-        if (monthSelect.value) {
-            monthSelect.dispatchEvent(new Event('change'));
+
+        // Initialize: Check for existing period (edit mode) or default to current month (create mode)
+        const existingPeriod = monthSelect.dataset.existingPeriod;
+        if (existingPeriod) {
+            // Edit mode: set dropdown to existing claim's month
+            monthSelect.value = existingPeriod;
+            updatePeriodFromMonth(existingPeriod);
+        } else {
+            // Create mode: default to current month
+            const now = new Date();
+            const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+            // Only set if the option exists
+            if (monthSelect.querySelector(`option[value="${currentMonth}"]`)) {
+                monthSelect.value = currentMonth;
+                updatePeriodFromMonth(currentMonth);
+            }
         }
     }
     

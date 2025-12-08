@@ -1,0 +1,18 @@
+{% extends 'base_simple.html' %}
+
+{% block title %}Transactions{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <h1 class="mb-4"><i class="fas fa-exchange-alt me-2"></i>Transactions</h1>
+    
+    <div class="card">
+        <div class="card-body">
+            <p>Transaction listing coming soon. Use the Django admin panel to view transactions for now.</p>
+            <a href="{% url 'admin:stripe_management_transaction_changelist' %}" class="btn btn-primary">
+                <i class="fas fa-cog me-2"></i>Manage in Admin
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
