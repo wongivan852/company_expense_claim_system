@@ -554,12 +554,11 @@ class ExpenseItem(models.Model):
         verbose_name=_("Category")
     )
     
-    # Amount and Currency
+    # Amount and Currency (allows negative for returns/refunds)
     original_amount = models.DecimalField(
         _("Original Amount"),
         max_digits=10,
-        decimal_places=2,
-        validators=[MinValueValidator(Decimal('0.01'))]
+        decimal_places=2
     )
     
     currency = models.ForeignKey(

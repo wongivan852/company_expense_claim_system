@@ -9,6 +9,7 @@ from django.contrib import messages
 from django.db import transaction
 from django.http import JsonResponse
 from .models import ExpenseClaim, ExpenseItem, Company, ExpenseCategory, Currency
+from apps.documents.models import ExpenseDocument
 from .forms import ExpenseClaimForm
 import logging
 
@@ -104,26 +105,26 @@ def _create_main_claim(request):
 
 def _process_expense_items(request, claim):
     """Process and create expense items."""
-    
+
     expense_items = []
     item_counter = 0
-    
+
     # Process expense items from form data
     while True:
         # Check if this item exists in form data
         category_key = f'expense_items[{item_counter}][category]'
-        
+
         if category_key not in request.POST:
             break
-            
+
         item_data = _extract_item_data(request, item_counter)
-        
+
         if item_data['category'] and item_data['amount'] and item_data['expense_date']:
-            expense_item = _create_expense_item(claim, item_data, item_counter + 1)
+            expense_item = _create_expense_item(request, claim, item_data, item_counter)
             expense_items.append(expense_item)
-            
+
         item_counter += 1
-    
+
     return expense_items
 
 
@@ -140,20 +141,24 @@ def _extract_item_data(request, item_index):
     }
 
 
-def _create_expense_item(claim, item_data, item_number):
-    """Create a single expense item."""
-    
+def _create_expense_item(request, claim, item_data, item_index):
+    """Create a single expense item with receipt upload handling."""
+
     try:
         category = ExpenseCategory.objects.get(id=int(item_data['category']))
         currency = Currency.objects.get(code=item_data['currency'])
-        
+
         original_amount = Decimal(item_data['amount'])
         exchange_rate = Decimal(item_data['exchange_rate'])
         amount_hkd = original_amount * exchange_rate
-        
+
+        # Check if receipt file is uploaded
+        receipt_file = request.FILES.get(f'expense_items[{item_index}][receipt]')
+        has_receipt = receipt_file is not None
+
         expense_item = ExpenseItem.objects.create(
             expense_claim=claim,
-            item_number=item_number,
+            item_number=item_index + 1,
             expense_date=item_data['expense_date'],
             description=item_data['description'] or f"{category.name} expense",
             category=category,
@@ -161,15 +166,25 @@ def _create_expense_item(claim, item_data, item_number):
             currency=currency,
             exchange_rate=exchange_rate,
             amount_hkd=amount_hkd,
-            has_receipt=True,  # Default to True, can be updated later
+            has_receipt=has_receipt,
         )
-        
+
+        # Handle receipt upload
+        if receipt_file:
+            ExpenseDocument.objects.create(
+                expense_item=expense_item,
+                document_type='receipt',
+                file=receipt_file,
+                uploaded_by=request.user
+            )
+            logger.info(f"Uploaded receipt for expense item {item_index + 1}")
+
         logger.info(f"Created expense item: {category.name} - {original_amount} {currency.code} = {amount_hkd} HKD")
         return expense_item
-        
+
     except Exception as e:
-        logger.error(f"Error creating expense item {item_number}: {str(e)}")
-        raise Exception(f"Error creating expense item {item_number}: {str(e)}")
+        logger.error(f"Error creating expense item {item_index + 1}: {str(e)}")
+        raise Exception(f"Error creating expense item {item_index + 1}: {str(e)}")
 
 
 def _update_claim_totals(claim):
