@@ -310,20 +310,20 @@
                                             <label class="form-label">💰 Amount (Fixed) <span class="text-danger">*</span></label>
                                             <div class="input-group">
                                                 <span class="input-group-text currency-symbol">{{ item.currency.symbol }}</span>
-                                                <input type="text" name="expense_items[{{ forloop.counter0 }}][amount]" 
-                                                       class="form-control decimal-input-safe" 
+                                                <input type="text" name="expense_items[{{ forloop.counter0 }}][amount]"
+                                                       class="form-control decimal-input-safe"
                                                        required
                                                        value="{{ item.original_amount }}"
                                                        placeholder="0.00"
-                                                       pattern="[0-9]+(\.[0-9]{1,2})?"
+                                                       pattern="-?[0-9]+(\.[0-9]{1,2})?"
                                                        inputmode="decimal"
                                                        data-original-amount="{{ item.original_amount }}"
-                                                       title="Enter amount (e.g., 123.45)"
+                                                       title="Enter amount (e.g., 123.45 or -50.00 for refund)"
                                                        autocomplete="off">
                                             </div>
                                             <div class="form-text">
                                                 <i class="fas fa-info-circle text-success"></i>
-                                                🎯 FIXED: Enter amount (e.g., 123.45) - No more jumping cursor!
+                                                Enter amount (e.g., 123.45) or negative for refund (-50.00)
                                             </div>
                                         </div>
                                     </div>
@@ -440,19 +440,19 @@
                                             <label class="form-label">💰 Amount (Fixed) <span class="text-danger">*</span></label>
                                             <div class="input-group">
                                                 <span class="input-group-text currency-symbol">$</span>
-                                                <input type="text" name="expense_items[0][amount]" 
-                                                       class="form-control decimal-input-safe" 
+                                                <input type="text" name="expense_items[0][amount]"
+                                                       class="form-control decimal-input-safe"
                                                        required
                                                        placeholder="0.00"
-                                                       pattern="[0-9]+(\.[0-9]{1,2})?"
+                                                       pattern="-?[0-9]+(\.[0-9]{1,2})?"
                                                        inputmode="decimal"
                                                        data-original-amount=""
-                                                       title="Enter amount (e.g., 123.45)"
+                                                       title="Enter amount (e.g., 123.45 or -50.00 for refund)"
                                                        autocomplete="off">
                                             </div>
                                             <div class="form-text">
                                                 <i class="fas fa-info-circle text-success"></i>
-                                                🎯 FIXED: Enter amount (e.g., 123.45) - No more jumping cursor!
+                                                Enter amount (e.g., 123.45) or negative for refund (-50.00)
                                             </div>
                                         </div>
                                     </div>
@@ -461,8 +461,8 @@
                                             <label class="form-label">HKD Equivalent</label>
                                             <div class="input-group">
                                                 <span class="input-group-text">HK$</span>
-                                                <input type="number" class="form-control hkd-equivalent" 
-                                                       readonly 
+                                                <input type="number" class="form-control hkd-equivalent"
+                                                       readonly
                                                        placeholder="0.00"
                                                        title="Automatically calculated HKD amount">
                                             </div>
@@ -470,12 +470,12 @@
                                         </div>
                                     </div>
                                 </div>
-                                
+
                                 <div class="row">
                                     <div class="col-md-6">
                                         <div class="mb-3">
                                             <label class="form-label">Date of Occurrence <span class="text-danger">*</span></label>
-                                            <input type="date" name="expense_items[0][expense_date]" 
+                                            <input type="date" name="expense_items[0][expense_date]"
                                                    class="form-control" required
                                                    title="When did this expense occur?">
                                             <div class="form-text">Specific date when this expense occurred</div>
@@ -484,8 +484,8 @@
                                     <div class="col-md-6">
                                         <div class="mb-3">
                                             <label class="form-label">Receipt</label>
-                                            <input type="file" name="expense_items[0][receipt]" 
-                                                   class="form-control" 
+                                            <input type="file" name="expense_items[0][receipt]"
+                                                   class="form-control"
                                                    accept=".jpg,.jpeg,.png,.pdf">
                                             <div class="form-text">JPEG, PNG, or PDF files up to 5MB</div>
                                         </div>
@@ -633,19 +633,19 @@
                     <label class="form-label">Amount <span class="text-danger">*</span></label>
                     <div class="input-group">
                         <span class="input-group-text currency-symbol">$</span>
-                        <input type="text" name="expense_items[INDEX][amount]" 
-                               class="form-control decimal-input-safe" 
+                        <input type="text" name="expense_items[INDEX][amount]"
+                               class="form-control decimal-input-safe"
                                required
                                placeholder="0.00"
-                               pattern="[0-9]+(\.[0-9]{1,2})?"
+                               pattern="-?[0-9]+(\.[0-9]{1,2})?"
                                inputmode="decimal"
                                data-original-amount=""
-                               title="Enter amount (e.g., 123.45)"
+                               title="Enter amount (e.g., 123.45 or -50.00 for refund)"
                                autocomplete="off">
                     </div>
                     <div class="form-text">
                         <i class="fas fa-info-circle text-primary"></i>
-                        Type numbers only, decimals auto-format
+                        Enter amount or negative for refund (-50.00)
                     </div>
                 </div>
             </div>
@@ -771,20 +771,26 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function validateAndFormatAmount(input) {
         let value = input.value.trim();
-        
+
         if (value === '') {
             return; // Allow empty values
         }
-        
+
+        // Check for negative sign at the beginning
+        const isNegative = value.startsWith('-');
+        if (isNegative) {
+            value = value.substring(1); // Remove the negative sign temporarily
+        }
+
         // Remove any non-numeric characters except decimal point
         value = value.replace(/[^\d.]/g, '');
-        
+
         // Handle multiple decimal points - keep only the first one
         const parts = value.split('.');
         if (parts.length > 2) {
             value = parts[0] + '.' + parts.slice(1).join('');
         }
-        
+
         // Limit to 2 decimal places
         if (value.includes('.')) {
             const [whole, decimal] = value.split('.');
@@ -792,24 +798,34 @@ document.addEventListener('DOMContentLoaded', function() {
                 value = whole + '.' + decimal.substring(0, 2);
             }
         }
-        
+
+        // Re-add negative sign if needed
+        if (isNegative && value) {
+            value = '-' + value;
+        }
+
         // Convert to number and validate
         const numValue = parseFloat(value);
-        if (isNaN(numValue) || numValue < 0) {
+        if (isNaN(numValue)) {
             showAmountFeedback(input, '❌ Please enter a valid amount', 'error');
             input.value = '';
             return;
         }
-        
-        // Check reasonable limits
-        if (numValue > 999999.99) {
+
+        // Check reasonable limits (absolute value)
+        if (Math.abs(numValue) > 999999.99) {
             showAmountFeedback(input, '💰 Maximum amount: $999,999.99', 'info');
-            value = '999999.99';
+            value = numValue > 0 ? '999999.99' : '-999999.99';
         }
-        
+
+        // Show feedback for refunds
+        if (numValue < 0) {
+            showAmountFeedback(input, '↩️ Refund amount entered', 'info');
+        }
+
         // Format to 2 decimal places for consistency
-        input.value = numValue.toFixed(2);
-        
+        input.value = parseFloat(value).toFixed(2);
+
         // Update HKD equivalent after validation
         const expenseItem = input.closest('.expense-item');
         if (expenseItem) {
@@ -1055,11 +1071,12 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         // Validate amount fields (both new and old classes)
+        // Allow negative values for refunds, but not zero
         const amountFields = document.querySelectorAll('.decimal-input-safe, .amount-field');
         amountFields.forEach(field => {
             const value = parseFloat(field.value);
-            if (isNaN(value) || value <= 0) {
-                field.setCustomValidity('Please enter a valid amount');
+            if (isNaN(value) || value === 0) {
+                field.setCustomValidity('Please enter a valid amount (negative for refunds)');
                 isValid = false;
             } else {
                 field.setCustomValidity('');

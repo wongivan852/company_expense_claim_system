@@ -395,73 +395,103 @@ def claim_create_view(request):
     from apps.documents.models import ExpenseDocument
     from decimal import Decimal
     import re
-    
+
     if request.method == 'POST':
         form = ExpenseClaimForm(request.POST, user=request.user)
         if form.is_valid():
             claim = form.save(commit=False)
             claim.claimant = request.user
             claim.save()
-            
-            # Process expense items
-            expense_items_created = 0
+
+            # Collect all expense item indices first to ensure proper processing order
+            expense_item_indices = set()
             for key in request.POST:
-                # Look for expense_items[N][field] pattern
                 match = re.match(r'expense_items\[(\d+)\]\[(\w+)\]', key)
                 if match:
-                    index, field = match.groups()
-                    index = int(index)
-                    
-                    # Get all data for this item index
-                    if field == 'category':  # Process each item only once
-                        try:
-                            category_id = request.POST.get(f'expense_items[{index}][category]')
-                            currency_code = request.POST.get(f'expense_items[{index}][currency]')
-                            exchange_rate = request.POST.get(f'expense_items[{index}][exchange_rate]')
-                            amount_str = request.POST.get(f'expense_items[{index}][amount]', '').replace(',', '')
-                            expense_date = request.POST.get(f'expense_items[{index}][expense_date]')
-                            description = request.POST.get(f'expense_items[{index}][description]', '')
-                            
-                            if category_id and currency_code and amount_str and expense_date:
-                                original_amount = Decimal(amount_str)
-                                exchange_rate_val = Decimal(exchange_rate or '1.0')
-                                
-                                # Create expense item
-                                expense_item = ExpenseItem.objects.create(
-                                    expense_claim=claim,
-                                    item_number=expense_items_created + 1,
-                                    category_id=category_id,
-                                    currency=Currency.objects.get(code=currency_code),
-                                    exchange_rate=exchange_rate_val,
-                                    original_amount=original_amount,
-                                    amount_hkd=original_amount * exchange_rate_val,
-                                    expense_date=expense_date,
-                                    description=description
+                    expense_item_indices.add(int(match.group(1)))
+
+            # Process expense items in order (0, 1, 2, ...)
+            expense_items_created = 0
+            files_saved = 0
+            for index in sorted(expense_item_indices):
+                try:
+                    category_id = request.POST.get(f'expense_items[{index}][category]')
+                    currency_code = request.POST.get(f'expense_items[{index}][currency]')
+                    exchange_rate = request.POST.get(f'expense_items[{index}][exchange_rate]')
+                    amount_str = request.POST.get(f'expense_items[{index}][amount]', '').replace(',', '')
+                    expense_date = request.POST.get(f'expense_items[{index}][expense_date]')
+                    description = request.POST.get(f'expense_items[{index}][description]', '')
+
+                    if category_id and currency_code and amount_str and expense_date:
+                        original_amount = Decimal(amount_str)
+                        exchange_rate_val = Decimal(exchange_rate or '1.0')
+
+                        # Create expense item
+                        expense_item = ExpenseItem.objects.create(
+                            expense_claim=claim,
+                            item_number=expense_items_created + 1,
+                            category_id=category_id,
+                            currency=Currency.objects.get(code=currency_code),
+                            exchange_rate=exchange_rate_val,
+                            original_amount=original_amount,
+                            amount_hkd=original_amount * exchange_rate_val,
+                            expense_date=expense_date,
+                            description=description
+                        )
+
+                        # Handle receipt upload - try multiple key formats for robustness
+                        receipt_file = None
+                        file_key = f'expense_items[{index}][receipt]'
+
+                        # Try to get the file directly
+                        if file_key in request.FILES:
+                            receipt_file = request.FILES[file_key]
+                        else:
+                            # Fallback: iterate through FILES to find matching key
+                            for fkey in request.FILES:
+                                if f'expense_items[{index}]' in fkey and 'receipt' in fkey:
+                                    receipt_file = request.FILES[fkey]
+                                    break
+
+                        if receipt_file:
+                            try:
+                                # Ensure file is at the beginning before saving
+                                if hasattr(receipt_file, 'seek'):
+                                    receipt_file.seek(0)
+
+                                doc = ExpenseDocument.objects.create(
+                                    expense_item=expense_item,
+                                    document_type='receipt',
+                                    file=receipt_file,
+                                    uploaded_by=request.user,
+                                    original_size=receipt_file.size if hasattr(receipt_file, 'size') else 0
                                 )
-                                
-                                # Handle receipt upload
-                                receipt_file = request.FILES.get(f'expense_items[{index}][receipt]')
-                                if receipt_file:
-                                    ExpenseDocument.objects.create(
-                                        expense_item=expense_item,
-                                        document_type='receipt',
-                                        file=receipt_file,
-                                        uploaded_by=request.user
-                                    )
-                                
-                                expense_items_created += 1
-                                
-                        except (ValueError, Currency.DoesNotExist, ExpenseCategory.DoesNotExist):
-                            continue
-            
+                                files_saved += 1
+                                logger.info(f"Document saved for expense item {expense_item.id}: {doc.original_filename}")
+                            except Exception as file_error:
+                                logger.error(f"Error saving file for expense item {index}: {file_error}")
+                                messages.warning(request, f'Receipt for item {index + 1} could not be saved: {str(file_error)}')
+
+                        expense_items_created += 1
+
+                except (ValueError, Currency.DoesNotExist, ExpenseCategory.DoesNotExist) as e:
+                    logger.warning(f"Error processing expense item {index}: {e}")
+                    continue
+                except Exception as e:
+                    logger.error(f"Unexpected error processing expense item {index}: {e}")
+                    continue
+
             if expense_items_created > 0:
-                messages.success(request, f'Expense claim created successfully with {expense_items_created} items.')
+                msg = f'Expense claim created successfully with {expense_items_created} items.'
+                if files_saved > 0:
+                    msg += f' {files_saved} receipt(s) attached.'
+                messages.success(request, msg)
             else:
                 messages.success(request, 'Expense claim created successfully.')
             return redirect('expense_claims:claim_detail', pk=claim.pk)
     else:
         form = ExpenseClaimForm(user=request.user)
-    
+
     context = {
         'form': form,
         'companies': Company.objects.filter(is_active=True),
@@ -598,20 +628,42 @@ def claim_edit_view(request, pk):
                         
                         expense_item.save()
                         expense_items_processed += 1
-                        
-                        # Handle receipt upload
-                        receipt_file = request.FILES.get(f'expense_items[{index}][receipt]')
+
+                        # Handle receipt upload - try multiple key formats for robustness
+                        receipt_file = None
+                        file_key = f'expense_items[{index}][receipt]'
+
+                        # Try to get the file directly
+                        if file_key in request.FILES:
+                            receipt_file = request.FILES[file_key]
+                        else:
+                            # Fallback: iterate through FILES to find matching key
+                            for fkey in request.FILES:
+                                if f'expense_items[{index}]' in fkey and 'receipt' in fkey:
+                                    receipt_file = request.FILES[fkey]
+                                    break
+
                         if receipt_file:
-                            # Delete existing receipt for this item
-                            expense_item.documents.filter(document_type='receipt').delete()
-                            # Create new receipt document
-                            ExpenseDocument.objects.create(
-                                expense_item=expense_item,
-                                document_type='receipt',
-                                file=receipt_file,
-                                uploaded_by=request.user
-                            )
-                        
+                            try:
+                                # Ensure file is at the beginning before saving
+                                if hasattr(receipt_file, 'seek'):
+                                    receipt_file.seek(0)
+
+                                # Delete existing receipt for this item
+                                expense_item.documents.filter(document_type='receipt').delete()
+                                # Create new receipt document
+                                ExpenseDocument.objects.create(
+                                    expense_item=expense_item,
+                                    document_type='receipt',
+                                    file=receipt_file,
+                                    uploaded_by=request.user,
+                                    original_size=receipt_file.size if hasattr(receipt_file, 'size') else 0
+                                )
+                                logger.info(f"Document updated for expense item {expense_item.id}")
+                            except Exception as file_error:
+                                logger.error(f"Error saving file for expense item {index}: {file_error}")
+                                messages.warning(request, f'Receipt for item {index + 1} could not be saved: {str(file_error)}')
+
                     except (ValueError, DecimalInvalidOperation) as e:
                         messages.warning(request, f'Error processing expense item {index}: {str(e)}')
                         continue
