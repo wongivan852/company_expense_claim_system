@@ -16,10 +16,10 @@ User = get_user_model()
 
 class ExpenseClaimForm(forms.ModelForm):
     """Optimized expense claim form with cached dropdowns."""
-    
+
     class Meta:
         model = ExpenseClaim
-        fields = ['company', 'event_name', 'period_from', 'period_to']
+        fields = ['company', 'event_name', 'period_from', 'period_to', 'claim_for']
         widgets = {
             'period_from': forms.DateInput(
                 attrs={'type': 'date', 'class': 'form-control'}
@@ -33,19 +33,35 @@ class ExpenseClaimForm(forms.ModelForm):
             'event_name': forms.TextInput(
                 attrs={'class': 'form-control', 'placeholder': 'e.g., IAICC event'}
             ),
+            'claim_for': forms.Select(
+                attrs={'class': 'form-select'}
+            ),
         }
-    
+
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
-        
+
         # Make event_name required
         self.fields['event_name'].required = True
-        
+
         # Use cached company data
         companies = ExpenseSystemCache.get_active_companies()
         self.fields['company'].choices = [('', '--- Select Company ---')] + [
             (company['id'], company['name']) for company in companies
+        ]
+
+        # Populate claim_for field with active users
+        # The current user is the applicant/claimant; claim_for allows specifying
+        # a different person for whom the claim is being submitted
+        self.fields['claim_for'].required = False
+        self.fields['claim_for'].label = 'Claim For (Optional)'
+        self.fields['claim_for'].help_text = 'Select if submitting on behalf of another user'
+
+        # Get active users for the claim_for dropdown
+        active_users = User.objects.filter(is_active=True).order_by('first_name', 'last_name')
+        self.fields['claim_for'].choices = [('', '--- Same as Applicant ---')] + [
+            (user.id, f"{user.get_full_name()} ({user.employee_id})") for user in active_users
         ]
     
     def clean_event_name(self):

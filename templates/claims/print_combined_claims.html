@@ -350,7 +350,10 @@
         <!-- Basic Information -->
         <div class="claim-info">
             <div class="info-left">
-                <div class="info-line"><strong>Claim made by:</strong> {{ combined_data.claimant_name }}</div>
+                <div class="info-line"><strong>Submitted by:</strong> {{ combined_data.claimant_name }}</div>
+                {% if combined_data.claim_for_name %}
+                <div class="info-line"><strong>Claim for:</strong> {{ combined_data.claim_for_name }}</div>
+                {% endif %}
             </div>
             <div class="info-right">
                 <div class="info-line"><strong>Period:</strong> {{ combined_data.period_from|date:"M d" }}-{{ combined_data.period_to|date:"d, Y" }}</div>
@@ -361,16 +364,20 @@
         <table class="expense-table">
             <thead>
                 <tr>
-                    <th rowspan="2" class="item-col">Item</th>
-                    <th rowspan="2" class="date-col">Date</th>
-                    <th rowspan="2" class="desc-col">Description</th>
-                    <th rowspan="2" class="currency-col">Original Currency</th>
+                    <th rowspan="3" class="item-col">Item</th>
+                    <th rowspan="3" class="date-col">Date</th>
+                    <th rowspan="3" class="desc-col">Description</th>
+                    <th rowspan="3" class="currency-col">Currency</th>
+                    <th rowspan="3" class="exchange-col">Exchange</th>
+                    <!-- HKD header spanning category columns and total -->
+                    <th colspan="{{ combined_data.present_categories|length|add:1 }}" style="text-align: center; background-color: #e8e8e8;">HKD</th>
+                </tr>
+                <tr>
                     <!-- Dynamic Category Headers - only present categories -->
                     {% for category in combined_data.present_categories %}
                     <th class="category-cols category-header">{{ category.zh_label }}</th>
                     {% endfor %}
-                    <th rowspan="2" class="exchange-col">Exchange</th>
-                    <th rowspan="2" class="total-col">Total(HK)</th>
+                    <th rowspan="2" class="total-col">Total</th>
                 </tr>
                 <tr>
                     <!-- Second row for English category labels -->
@@ -402,7 +409,8 @@
                         {% endif %}
                     </td>
                     <td class="currency-col">{{ item.currency.code }}</td>
-                    
+                    <td class="amount-cell exchange-col">{{ item.exchange_rate|floatformat:2 }}</td>
+
                     <!-- Dynamic Category Amount Columns - only present categories -->
                     {% for category in combined_data.present_categories %}
                         {% if item.category.code == category.code %}
@@ -411,19 +419,17 @@
                         <td class="category-cols"></td>
                         {% endif %}
                     {% endfor %}
-                    
-                    <td class="amount-cell exchange-col">{{ item.exchange_rate|floatformat:2 }}</td>
+
                     <td class="amount-cell total-col">{{ item.amount_hkd|floatformat:2 }}</td>
                 </tr>
                 {% endfor %}
-                
+
                 <!-- Total Row -->
                 <tr class="total-row">
-                    <td colspan="4"><strong>Combined Total</strong></td>
+                    <td colspan="5"><strong>Combined Total</strong></td>
                     {% for category in combined_data.present_categories %}
                     <td class="amount-cell">{{ combined_data.category_totals|get_item:category.code|floatformat:2 }}</td>
                     {% endfor %}
-                    <td></td>
                     <td class="amount-cell"><strong>{{ combined_data.total_hkd|floatformat:2 }}</strong></td>
                 </tr>
             </tbody>

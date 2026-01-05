@@ -53,7 +53,8 @@ class OptimizedExpenseClaimListView(LoginRequiredMixin, ListView):
         """Optimized queryset with select_related and prefetch_related."""
         queryset = ExpenseClaim.objects.select_related(
             'claimant',
-            'company', 
+            'claim_for',
+            'company',
             'approved_by'
         ).prefetch_related(
             Prefetch(
@@ -110,6 +111,7 @@ class OptimizedExpenseClaimDetailView(LoginRequiredMixin, DetailView):
         """Optimized queryset for detail view."""
         return ExpenseClaim.objects.select_related(
             'claimant',
+            'claim_for',
             'company',
             'checked_by',
             'approved_by'

@@ -58,7 +58,12 @@
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-6">
-                            <p><strong>Claimant:</strong> {{ claim.claimant.get_full_name }}</p>
+                            <p><strong>Applicant (Submitted By):</strong> {{ claim.claimant.get_full_name }}</p>
+                            {% if claim.claim_for and claim.claim_for != claim.claimant %}
+                            <p><strong>Claim For (Expense Owner):</strong>
+                                <span class="badge bg-primary">{{ claim.claim_for.get_full_name }}</span>
+                            </p>
+                            {% endif %}
                             <p><strong>Department:</strong> {{ claim.claimant.department|default:"N/A" }}</p>
                             <p><strong>Purpose:</strong> {{ claim.event_name }}</p>
                         </div>

@@ -326,7 +326,10 @@
             <!-- Basic Information -->
             <div class="claim-info">
                 <div class="info-left">
-                    <div class="info-line"><strong>Claim made by:</strong> {{ claim_data.claim.claimant.get_full_name }}</div>
+                    <div class="info-line"><strong>Submitted by:</strong> {{ claim_data.claim.claimant.get_full_name }}</div>
+                    {% if claim_data.claim.claim_for and claim_data.claim.claim_for != claim_data.claim.claimant %}
+                    <div class="info-line"><strong>Claim for:</strong> {{ claim_data.claim.claim_for.get_full_name }}</div>
+                    {% endif %}
                 </div>
                 <div class="info-right">
                     <div class="info-line"><strong>Period:</strong> {{ claim_data.claim.period_from|date:"M d" }}-{{ claim_data.claim.period_to|date:"d, Y" }}</div>
@@ -340,7 +343,7 @@
                         <th rowspan="2" class="item-col">Item</th>
                         <th rowspan="2" class="date-col">Date</th>
                         <th rowspan="2" class="desc-col">Description</th>
-                        <th rowspan="2" class="currency-col">Original Currency</th>
+                        <th rowspan="2" class="currency-col">Currency</th>
                         <!-- Dynamic Category Headers - only present categories -->
                         {% for category in claim_data.present_categories %}
                         <th class="category-cols category-header">{{ category.zh_label }}</th>

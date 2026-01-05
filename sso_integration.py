@@ -133,6 +133,10 @@ class SSOMiddleware:
                 # Log the user in
                 login(request, user, backend='sso_integration.SSOAuthenticationBackend')
 
+                # Explicitly save the session to ensure it persists
+                request.session.save()
+                logger.info(f"User {user.email} logged in via SSO, session saved")
+
                 # Create session record in central platform
                 self._create_central_session(request, sso_token)
 

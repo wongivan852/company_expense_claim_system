@@ -80,6 +80,7 @@
                     <tr>
                         <th>Claim #</th>
                         <th>Event/Purpose</th>
+                        <th>Claim For</th>
                         <th>Company</th>
                         <th>Period</th>
                         <th>Total Amount</th>
@@ -98,6 +99,14 @@
                             <strong>{{ claim.event_name|truncatechars:40 }}</strong>
                             {% if claim.expense_items.count %}
                             <br><small class="text-muted">{{ claim.expense_items.count }} items</small>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if claim.claim_for and claim.claim_for != claim.claimant %}
+                            <span class="badge bg-primary">{{ claim.claim_for.get_full_name }}</span>
+                            <br><small class="text-muted">by {{ claim.claimant.get_full_name }}</small>
+                            {% else %}
+                            <span class="text-muted">{{ claim.claimant.get_full_name }}</span>
                             {% endif %}
                         </td>
                         <td>

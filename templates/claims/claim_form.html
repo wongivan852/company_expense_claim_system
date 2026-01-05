@@ -161,6 +161,25 @@
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
+                                <label for="{{ form.claim_for.id_for_label }}" class="form-label">
+                                    Claim For (Optional)
+                                </label>
+                                {{ form.claim_for|add_class:"form-select" }}
+                                <div class="form-text">
+                                    Leave empty if you are the expense owner. Select a user if submitting on behalf of someone else.
+                                </div>
+                                {% if form.claim_for.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.claim_for.errors.0 }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
                                 <label class="form-label">
                                     Expense Month <span class="text-danger">*</span>
                                 </label>
@@ -249,25 +268,40 @@
                     <h5 class="card-title mb-0">
                         <i class="fas fa-receipt"></i> Expense Items
                     </h5>
-                    <button type="button" class="btn btn-sm btn-primary" id="addExpenseItem">
-                        <i class="fas fa-plus"></i> Add Item
-                    </button>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-sm btn-outline-secondary" id="sortByDate" title="Sort items by date">
+                            <i class="fas fa-sort-amount-down"></i> Sort by Date
+                        </button>
+                        <button type="button" class="btn btn-sm btn-primary" id="addExpenseItem">
+                            <i class="fas fa-plus"></i> Add Item
+                        </button>
+                    </div>
                 </div>
                 <div class="card-body">
                     <div id="expense-items-container">
                         {% if claim.expense_items.all %}
                             <!-- Existing expense items (edit mode) -->
                             {% for item in claim.expense_items.all %}
-                            <div class="expense-item border rounded p-3 mb-3">
+                            <div class="expense-item border rounded p-3 mb-3" data-item-id="{{ item.id }}">
                                 <div class="d-flex justify-content-between align-items-center mb-3">
                                     <h6 class="mb-0">
-                                        <i class="fas fa-tag"></i> Expense Item #{{ forloop.counter }}
+                                        <i class="fas fa-tag"></i> Expense Item #<span class="item-number">{{ forloop.counter }}</span>
                                     </h6>
-                                    <button type="button" class="btn btn-sm btn-outline-danger remove-item" {% if forloop.first and forloop.last %}style="display: none;"{% endif %}>
-                                        <i class="fas fa-trash"></i>
-                                    </button>
+                                    <div class="btn-group">
+                                        <button type="button" class="btn btn-sm btn-outline-secondary move-up" title="Move up" {% if forloop.first %}disabled{% endif %}>
+                                            <i class="fas fa-arrow-up"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary move-down" title="Move down" {% if forloop.last %}disabled{% endif %}>
+                                            <i class="fas fa-arrow-down"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline-danger remove-item" {% if forloop.first and forloop.last %}style="display: none;"{% endif %}>
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
                                 </div>
-                                
+                                <!-- Hidden field to track item ID for updates -->
+                                <input type="hidden" name="expense_items[{{ forloop.counter0 }}][id]" value="{{ item.id }}">
+
                                 <div class="row">
                                     <div class="col-md-4">
                                         <div class="mb-3">
@@ -391,11 +425,19 @@
                             <div class="expense-item border rounded p-3 mb-3">
                                 <div class="d-flex justify-content-between align-items-center mb-3">
                                     <h6 class="mb-0">
-                                        <i class="fas fa-tag"></i> Expense Item #1
+                                        <i class="fas fa-tag"></i> Expense Item #<span class="item-number">1</span>
                                     </h6>
-                                    <button type="button" class="btn btn-sm btn-outline-danger remove-item" style="display: none;">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
+                                    <div class="btn-group">
+                                        <button type="button" class="btn btn-sm btn-outline-secondary move-up" title="Move up" disabled>
+                                            <i class="fas fa-arrow-up"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary move-down" title="Move down" disabled>
+                                            <i class="fas fa-arrow-down"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline-danger remove-item" style="display: none;">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
                                 </div>
                                 
                                 <div class="row">
@@ -586,9 +628,17 @@
             <h6 class="mb-0">
                 <i class="fas fa-tag"></i> Expense Item #<span class="item-number"></span>
             </h6>
-            <button type="button" class="btn btn-sm btn-outline-danger remove-item">
-                <i class="fas fa-trash"></i>
-            </button>
+            <div class="btn-group">
+                <button type="button" class="btn btn-sm btn-outline-secondary move-up" title="Move up">
+                    <i class="fas fa-arrow-up"></i>
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary move-down" title="Move down">
+                    <i class="fas fa-arrow-down"></i>
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-danger remove-item">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
         </div>
         
         <div class="row">
@@ -736,8 +786,102 @@ document.addEventListener('DOMContentLoaded', function() {
             updateTotals();
             updateRemoveButtons();
             updateItemNumbers();
+            updateMoveButtons();
         }
     });
+
+    // Move expense item up
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.move-up')) {
+            const item = e.target.closest('.expense-item');
+            const prevItem = item.previousElementSibling;
+            if (prevItem && prevItem.classList.contains('expense-item')) {
+                item.parentNode.insertBefore(item, prevItem);
+                updateItemNumbers();
+                updateFormIndices();
+                updateMoveButtons();
+            }
+        }
+    });
+
+    // Move expense item down
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.move-down')) {
+            const item = e.target.closest('.expense-item');
+            const nextItem = item.nextElementSibling;
+            if (nextItem && nextItem.classList.contains('expense-item')) {
+                item.parentNode.insertBefore(nextItem, item);
+                updateItemNumbers();
+                updateFormIndices();
+                updateMoveButtons();
+            }
+        }
+    });
+
+    // Sort by date button
+    document.getElementById('sortByDate').addEventListener('click', function() {
+        const container = document.getElementById('expense-items-container');
+        const items = Array.from(container.querySelectorAll('.expense-item'));
+
+        // Sort items by date
+        items.sort((a, b) => {
+            const dateA = a.querySelector('input[type="date"]')?.value || '';
+            const dateB = b.querySelector('input[type="date"]')?.value || '';
+            return dateA.localeCompare(dateB);
+        });
+
+        // Re-append items in sorted order
+        items.forEach(item => container.appendChild(item));
+
+        // Update indices and numbering
+        updateItemNumbers();
+        updateFormIndices();
+        updateMoveButtons();
+
+        // Show feedback
+        showSortFeedback('Items sorted by date');
+    });
+
+    function showSortFeedback(message) {
+        const sortBtn = document.getElementById('sortByDate');
+        const originalHtml = sortBtn.innerHTML;
+        sortBtn.innerHTML = '<i class="fas fa-check"></i> Sorted!';
+        sortBtn.classList.remove('btn-outline-secondary');
+        sortBtn.classList.add('btn-success');
+        setTimeout(() => {
+            sortBtn.innerHTML = originalHtml;
+            sortBtn.classList.remove('btn-success');
+            sortBtn.classList.add('btn-outline-secondary');
+        }, 1500);
+    }
+
+    function updateFormIndices() {
+        const items = document.querySelectorAll('.expense-item');
+        items.forEach((item, index) => {
+            // Update all input/select/textarea names with the new index
+            const formElements = item.querySelectorAll('input, select, textarea');
+            formElements.forEach(element => {
+                if (element.name) {
+                    element.name = element.name.replace(/expense_items\[\d+\]/, `expense_items[${index}]`);
+                }
+            });
+        });
+    }
+
+    function updateMoveButtons() {
+        const items = document.querySelectorAll('.expense-item');
+        items.forEach((item, index) => {
+            const moveUpBtn = item.querySelector('.move-up');
+            const moveDownBtn = item.querySelector('.move-down');
+
+            if (moveUpBtn) {
+                moveUpBtn.disabled = (index === 0);
+            }
+            if (moveDownBtn) {
+                moveDownBtn.disabled = (index === items.length - 1);
+            }
+        });
+    }
 
     // Simplified amount input handling - minimal interference during typing
     document.addEventListener('input', function(e) {
@@ -1177,11 +1321,148 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize page
     updateRemoveButtons();
     updateTotals();
-    
+    updateMoveButtons();
+
     // Initialize item counter for edit mode
     {% if claim.expense_items.all %}
     itemCounter = {{ claim.expense_items.all|length }};
     {% endif %}
+
+    // ========================================
+    // IMAGE UPLOAD RETRY LOGIC
+    // ========================================
+    // Track failed uploads for retry
+    const failedUploads = new Map();
+    const MAX_RETRIES = 3;
+
+    // Handle file input change for receipts
+    document.addEventListener('change', function(e) {
+        if (e.target.type === 'file' && e.target.name && e.target.name.includes('[receipt]')) {
+            const fileInput = e.target;
+            const file = fileInput.files[0];
+
+            if (file) {
+                // Validate file before upload attempt
+                const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'application/pdf'];
+                const maxSize = 5 * 1024 * 1024; // 5MB
+
+                if (!validTypes.includes(file.type)) {
+                    showUploadFeedback(fileInput, 'Invalid file type. Please use JPEG, PNG, GIF or PDF.', 'error');
+                    fileInput.value = '';
+                    return;
+                }
+
+                if (file.size > maxSize) {
+                    showUploadFeedback(fileInput, 'File too large. Maximum size is 5MB.', 'error');
+                    fileInput.value = '';
+                    return;
+                }
+
+                // Show upload preview/status
+                showUploadFeedback(fileInput, `Selected: ${file.name} (${formatFileSize(file.size)})`, 'success');
+
+                // Store the file for potential retry
+                failedUploads.set(fileInput.name, {
+                    file: file,
+                    retries: 0,
+                    input: fileInput
+                });
+            }
+        }
+    });
+
+    // Handle form submission with upload retry logic
+    const form = document.querySelector('.needs-validation');
+    const originalSubmitHandler = form.onsubmit;
+
+    form.addEventListener('submit', async function(e) {
+        // Check for any files that need validation
+        const fileInputs = form.querySelectorAll('input[type="file"]');
+        let hasInvalidFiles = false;
+
+        fileInputs.forEach(input => {
+            if (input.files && input.files[0]) {
+                const file = input.files[0];
+                const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'application/pdf'];
+                const maxSize = 5 * 1024 * 1024;
+
+                if (!validTypes.includes(file.type) || file.size > maxSize) {
+                    hasInvalidFiles = true;
+                    showUploadFeedback(input, 'Please fix this file before submitting', 'error');
+                }
+            }
+        });
+
+        if (hasInvalidFiles) {
+            e.preventDefault();
+            showAmountFeedback(fileInputs[0], 'Please fix invalid files before submitting', 'error');
+        }
+    });
+
+    function showUploadFeedback(input, message, type = 'info') {
+        // Remove existing feedback
+        const parentDiv = input.closest('.mb-3');
+        const existing = parentDiv ? parentDiv.querySelector('.upload-feedback') : null;
+        if (existing) {
+            existing.remove();
+        }
+
+        const feedback = document.createElement('div');
+        feedback.className = `upload-feedback small mt-1 ${type === 'error' ? 'text-danger' : type === 'success' ? 'text-success' : 'text-info'}`;
+
+        let icon = 'info-circle';
+        if (type === 'error') icon = 'exclamation-circle';
+        if (type === 'success') icon = 'check-circle';
+
+        feedback.innerHTML = `<i class="fas fa-${icon}"></i> ${message}`;
+
+        if (parentDiv) {
+            parentDiv.appendChild(feedback);
+        }
+
+        // Auto-remove success messages after delay
+        if (type === 'success') {
+            setTimeout(() => {
+                if (feedback.parentNode) {
+                    feedback.remove();
+                }
+            }, 5000);
+        }
+    }
+
+    function formatFileSize(bytes) {
+        if (bytes < 1024) return bytes + ' bytes';
+        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+        return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    }
+
+    // Add retry button functionality for failed uploads
+    function addRetryButton(input) {
+        const parentDiv = input.closest('.mb-3');
+        const existingRetry = parentDiv ? parentDiv.querySelector('.retry-upload-btn') : null;
+        if (existingRetry) return;
+
+        const retryBtn = document.createElement('button');
+        retryBtn.type = 'button';
+        retryBtn.className = 'btn btn-sm btn-warning retry-upload-btn mt-1';
+        retryBtn.innerHTML = '<i class="fas fa-redo"></i> Retry Upload';
+        retryBtn.onclick = function() {
+            // Re-trigger file selection
+            input.click();
+        };
+
+        if (parentDiv) {
+            parentDiv.appendChild(retryBtn);
+        }
+    }
+
+    function removeRetryButton(input) {
+        const parentDiv = input.closest('.mb-3');
+        const existingRetry = parentDiv ? parentDiv.querySelector('.retry-upload-btn') : null;
+        if (existingRetry) {
+            existingRetry.remove();
+        }
+    }
 });
 </script>
 {% endblock %}

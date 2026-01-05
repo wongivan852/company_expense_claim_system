@@ -70,33 +70,36 @@ def _handle_claim_creation(request):
 
 def _create_main_claim(request):
     """Create the main expense claim."""
-    
+
     # Handle monthly period calculation
     period_from = request.POST.get('period_from')
     period_to = request.POST.get('period_to')
-    
+
     if period_from and not period_to:
         # Calculate full month period
         from datetime import datetime, timedelta
         import calendar
-        
+
         start_date = datetime.strptime(period_from, '%Y-%m-%d').date()
         # Set to first day of month
         first_day = start_date.replace(day=1)
         # Calculate last day of month
         last_day = start_date.replace(day=calendar.monthrange(start_date.year, start_date.month)[1])
-        
+
         # Create a mutable POST data copy
         post_data = request.POST.copy()
         post_data['period_from'] = first_day.strftime('%Y-%m-%d')
         post_data['period_to'] = last_day.strftime('%Y-%m-%d')
         request.POST = post_data
-    
+
     form = ExpenseClaimForm(request.POST, user=request.user)
-    
+
     if form.is_valid():
         claim = form.save(commit=False)
         claim.claimant = request.user
+
+        # Handle claim_for field - if not set, the claimant is the expense owner
+        # claim_for is handled by the form if provided
         claim.save()
         return claim
     else:

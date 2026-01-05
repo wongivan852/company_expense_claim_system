@@ -360,9 +360,15 @@
                         <td>{{ combined_data.claims_count }} claims ({{ combined_data.claim_numbers }})</td>
                     </tr>
                     <tr>
-                        <td class="label">Claimant:</td>
+                        <td class="label">Submitted by:</td>
                         <td>{{ combined_data.claimant_name }}</td>
                     </tr>
+                    {% if combined_data.claim_for_name %}
+                    <tr>
+                        <td class="label">Claim for:</td>
+                        <td>{{ combined_data.claim_for_name }}</td>
+                    </tr>
+                    {% endif %}
                     <tr>
                         <td class="label">Event/Purpose:</td>
                         <td>{{ combined_data.event_name }}</td>
@@ -385,9 +391,15 @@
                         <td>{{ claims_data.0.claim.claim_number }}</td>
                     </tr>
                     <tr>
-                        <td class="label">Claimant:</td>
+                        <td class="label">Submitted by:</td>
                         <td>{{ claims_data.0.claim.claimant.get_full_name }}</td>
                     </tr>
+                    {% if claims_data.0.claim.claim_for and claims_data.0.claim.claim_for != claims_data.0.claim.claimant %}
+                    <tr>
+                        <td class="label">Claim for:</td>
+                        <td>{{ claims_data.0.claim.claim_for.get_full_name }}</td>
+                    </tr>
+                    {% endif %}
                     <tr>
                         <td class="label">Event/Purpose:</td>
                         <td>{{ claims_data.0.claim.event_name }}</td>
@@ -417,7 +429,7 @@
                             <th rowspan="2" class="item-col">Item</th>
                             <th rowspan="2" class="date-col">Date</th>
                             <th rowspan="2" class="desc-col">Description</th>
-                            <th rowspan="2" class="currency-col">Original Currency</th>
+                            <th rowspan="2" class="currency-col">Currency</th>
                             <!-- Dynamic Category Headers - only present categories -->
                             {% if is_combined %}
                                 {% for category in combined_data.present_categories %}
